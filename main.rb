@@ -8,7 +8,7 @@ class Object3D
         File.open(file_name, 'rb'){|file|
             @model = MMDModel.new()
             @model.load(file)
-            @textures = Hash.new();
+            @textures = Hash.new()
             
             @model.materials.each do |material|
                 if material.texture != nil && material.texture.length > 0
@@ -22,7 +22,7 @@ class Object3D
     end
     
     def get_raw(bitmap)
-        image = ""
+        image = ''
         
         bitmap.height.times do |y|
             bitmap.width.times do |x|
@@ -53,6 +53,11 @@ class Object3D
         GL.BindTexture(GL::TEXTURE_2D, 0)
 
         return texture
+    end
+    
+    def init_light()
+        @light_diffuse = [1.0, 1.0, 1.0]
+        @light_dir = [0.0, 0.0, 1.0]
     end
 
     def reshape(w,h)
@@ -101,6 +106,8 @@ class Object3D
         end
         
         GL.Uniform1f(@locations[:use_texture], useTexture)
+        GL.Uniform3fv(@locations[:light_dir], @light_dir)
+        GL.Uniform3fv(@locations[:light_diffuse], @light_diffuse)
 
         GL.Begin(GL::TRIANGLES)
         GL.Color(material.diffuse[0], material.diffuse[1], material.diffuse[2])
@@ -113,7 +120,7 @@ class Object3D
             uv = vertex.uv
             
             GL.TexCoord2f(uv[0], uv[1])
-            GL.Normal(normal[0], normal[1], normal[2]);
+            GL.Normal(normal[0], normal[1], normal[2])
             GL.Vertex(pos[0], pos[1], pos[2])
         end
 
@@ -172,17 +179,21 @@ class Object3D
         @program = create_program('./shader/mmd.vert', './shader/mmd.frag')
         
         @locations = Hash.new()
-        @locations[:ambient] = GL.GetUniformLocation(@program, 'ambient')
         @locations[:alpha] = GL.GetUniformLocation(@program, 'alpha')
+        @locations[:ambient] = GL.GetUniformLocation(@program, 'ambient')
         @locations[:sampler] = GL.GetUniformLocation(@program, 'sampler')
         @locations[:use_texture] = GL.GetUniformLocation(@program, 'useTexture')
+        @locations[:light_diffuse] = GL.GetUniformLocation(@program, 'lightDiffuse')
+        @locations[:light_dir] = GL.GetUniformLocation(@program, 'lightDir')
+        
+        init_light()
 
         GLUT.ReshapeFunc(method(:reshape).to_proc())
         GLUT.DisplayFunc(method(:display).to_proc())
         GLUT.MouseFunc(method(:mouse).to_proc())
         GLUT.MotionFunc(method(:motion).to_proc())
         
-        load_model('./model/miku.pmd');
+        load_model('./model/miku.pmd')
     end
     
     def create_program(vert_name, frag_name)
@@ -213,7 +224,7 @@ class Object3D
             GL.CompileShader(shader)
             
             if !GL.GetShaderiv(shader, GL_COMPILE_STATUS)
-                raise(GL.GetShaderInfoLog(shader));
+                raise(GL.GetShaderInfoLog(shader))
             end
         }
         

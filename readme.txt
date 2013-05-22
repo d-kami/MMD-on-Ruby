@@ -19,3 +19,7 @@ http://fear-no-context.air-nifty.com/blog/2005/08/rubybmp_13eb.html
 
 MMD配布元
 http://www.geocities.jp/higuchuu4/
+
+現在の状況
+モデルを読み込んで表示するのみ
+(モデルによっては正常に表示できない)

@@ -16,3 +16,6 @@ gem install ruby-opengl
 bmp.rb(このrepositoryに含まれています)
 配布元
 http://fear-no-context.air-nifty.com/blog/2005/08/rubybmp_13eb.html
+
+MMD配布元
+http://www.geocities.jp/higuchuu4/

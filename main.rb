@@ -72,7 +72,7 @@ class Object3D
     
     def init_light()
         @light_diffuse = [1.0, 1.0, 1.0]
-        @light_dir = [0.0, 0.0, 1.0]
+        @light_dir = [0.5, 1.0, 0.5]
     end
 
     def reshape(w,h)
@@ -113,7 +113,10 @@ class Object3D
         start = 0
 
         @model.materials.each do |material|
-            draw(material, start)
+            if(material.edge_flag)
+                draw(material, start)
+            end
+            
             start += material.vert_count
         end
 
@@ -145,6 +148,8 @@ class Object3D
         GL.Uniform1i(@locations[:toon_sampler], 1)
         
         GL.Uniform1f(@locations[:use_texture], useTexture)
+        GL.Uniform1f(@locations[:shininess], material.specularity)
+        GL.Uniform3fv(@locations[:specular_color], material.specular)
         GL.Uniform3fv(@locations[:light_dir], @light_dir)
         GL.Uniform3fv(@locations[:light_diffuse], @light_diffuse)
 
@@ -203,7 +208,7 @@ class Object3D
         @drag_flg = false
         
         GLUT.InitWindowPosition(100, 100)
-        GLUT.InitWindowSize(300,300)
+        GLUT.InitWindowSize(450,450)
         GLUT.Init()
         GLUT.InitDisplayMode(GLUT::GLUT_DOUBLE | GLUT::GLUT_RGB | GLUT::GLUT_DEPTH)
         GLUT.CreateWindow('MMD on Ruby')
@@ -225,6 +230,8 @@ class Object3D
         @locations[:use_texture] = GL.GetUniformLocation(@program, 'useTexture')
         @locations[:light_diffuse] = GL.GetUniformLocation(@program, 'lightDiffuse')
         @locations[:light_dir] = GL.GetUniformLocation(@program, 'lightDir')
+        @locations[:shininess] = GL.GetUniformLocation(@program, 'shininess')
+        @locations[:specular_color] = GL.GetUniformLocation(@program, 'supecularColor')
         
         init_light()
         load_model("./model/#{model_name}")

@@ -1,9 +1,12 @@
 uniform bool isEdge;
+
+varying vec3 position;
 varying vec3 normal;
 
 void main(void)
 {
     vec4 pos = gl_ModelViewProjectionMatrix * gl_Vertex;
+    position = (gl_ModelViewMatrix * vec4(gl_Vertex.xyz, 1.0)).xyz;
     normal = gl_NormalMatrix * gl_Normal;
 
     if (isEdge) {

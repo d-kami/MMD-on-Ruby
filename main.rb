@@ -4,6 +4,21 @@ require './mmd.rb'
 require './bmp.rb'
 
 class Object3D
+    def load_toons()
+        10.times do |index|
+            if index == 9
+                file_name = "toon#{index + 1}.bmp"
+            else
+                file_name = "toon0#{index + 1}.bmp"
+            end
+            
+            bitmap = BitMap.read('./toon/' + file_name)
+            image = get_raw(bitmap)
+
+            @textures[file_name] = create_texture(image, bitmap.width, bitmap.height)
+        end
+    end
+
     def load_model(file_name)
         File.open(file_name, 'rb'){|file|
             @model = MMDModel.new()
@@ -83,6 +98,20 @@ class Object3D
 
         start = 0
 
+        GL.Enable(GL::CULL_FACE);
+        GL.CullFace(GL::BACK);
+        GL.Uniform1i(@locations[:is_edge], 0);
+
+        @model.materials.each do |material|
+            draw(material, start)
+            start += material.vert_count
+        end
+        
+        GL.CullFace(GL::FRONT);
+        GL.Uniform1i(@locations[:is_edge], 1);
+
+        start = 0
+
         @model.materials.each do |material|
             draw(material, start)
             start += material.vert_count
@@ -104,6 +133,16 @@ class Object3D
             
             useTexture = 1.0
         end
+        
+        if material.toon_index == 9
+            toon = "toon#{material.toon_index + 1}.bmp"
+        else
+            toon = "toon0#{material.toon_index + 1}.bmp"
+        end
+        
+        GL.ActiveTexture(GL::TEXTURE1)
+        GL.BindTexture(GL::TEXTURE_2D, @textures[toon])
+        GL.Uniform1i(@locations[:toon_sampler], 1)
         
         GL.Uniform1f(@locations[:use_texture], useTexture)
         GL.Uniform3fv(@locations[:light_dir], @light_dir)
@@ -156,7 +195,7 @@ class Object3D
         GLUT.PostRedisplay()
     end
 
-    def initialize()
+    def initialize(model_name)
         @start_x = 0
         @start_y = 0
         @rotY = 0
@@ -169,7 +208,6 @@ class Object3D
         GLUT.InitDisplayMode(GLUT::GLUT_DOUBLE | GLUT::GLUT_RGB | GLUT::GLUT_DEPTH)
         GLUT.CreateWindow('MMD on Ruby')
 
-        GL.FrontFace(GL::GL_CW)
         GL.Enable(GL::GL_AUTO_NORMAL)
         GL.Enable(GL::GL_NORMALIZE)
         GL.Enable(GL::GL_DEPTH_TEST)
@@ -179,21 +217,23 @@ class Object3D
         @program = create_program('./shader/mmd.vert', './shader/mmd.frag')
         
         @locations = Hash.new()
+        @locations[:is_edge] = GL.GetUniformLocation(@program, 'isEdge')
         @locations[:alpha] = GL.GetUniformLocation(@program, 'alpha')
         @locations[:ambient] = GL.GetUniformLocation(@program, 'ambient')
         @locations[:sampler] = GL.GetUniformLocation(@program, 'sampler')
+        @locations[:toon_sampler] = GL.GetUniformLocation(@program, 'toonSampler')
         @locations[:use_texture] = GL.GetUniformLocation(@program, 'useTexture')
         @locations[:light_diffuse] = GL.GetUniformLocation(@program, 'lightDiffuse')
         @locations[:light_dir] = GL.GetUniformLocation(@program, 'lightDir')
         
         init_light()
+        load_model("./model/#{model_name}")
+        load_toons()
 
         GLUT.ReshapeFunc(method(:reshape).to_proc())
         GLUT.DisplayFunc(method(:display).to_proc())
         GLUT.MouseFunc(method(:mouse).to_proc())
         GLUT.MotionFunc(method(:motion).to_proc())
-        
-        load_model('./model/miku.pmd')
     end
     
     def create_program(vert_name, frag_name)
@@ -236,4 +276,4 @@ class Object3D
     end
 end
 
-Object3D.new().start()
+Object3D.new("miku.pmd").start()

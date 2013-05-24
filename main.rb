@@ -2,6 +2,7 @@ require 'opengl'
 require 'glut'
 require './mmd.rb'
 require './bmp.rb'
+require './pureimage.rb'
 
 class Object3D
     def load_toons()
@@ -12,7 +13,7 @@ class Object3D
                 file_name = "toon0#{index + 1}.bmp"
             end
             
-            bitmap = BitMap.read('./toon/' + file_name)
+            bitmap = BitMap.read("./toon/#{file_name}")
             image = get_raw(bitmap)
 
             @textures[file_name] = create_texture(image, bitmap.width, bitmap.height)
@@ -26,11 +27,21 @@ class Object3D
             @textures = Hash.new()
             
             @model.materials.each do |material|
+                if(@textures.key?(material.texture))
+                    next
+                end
+
                 if material.texture != nil && material.texture.length > 0
-                    bitmap = BitMap.read('./model/' + material.texture)
-                    image = get_raw(bitmap)
-                    
-                    @textures[material.texture] = create_texture(image, bitmap.width, bitmap.height)
+                    if material.texture.end_with?('.bmp')
+                        bitmap = BitMap.read("./model/#{material.texture}")
+                        image = get_raw(bitmap)
+                        @textures[material.texture] = create_texture(image, bitmap.width, bitmap.height)
+                    elsif material.texture.end_with?('.png')
+                        pngio = PureImage::PNGIO.new()
+                        png = pngio.load("./model/#{material.texture}")
+                        image = get_raw_png(png)
+                        @textures[material.texture] = create_texture(image, png.width, png.height)
+                    end
                 end
             end
         }
@@ -44,6 +55,23 @@ class Object3D
                 rgb = bitmap.pget(x, y)
 
                 index = (y * bitmap.width + x) * 3
+                image[index] = rgb[0]
+                image[index + 1] = rgb[1]
+                image[index + 2] = rgb[2]
+            end
+        end
+
+        return image
+    end
+    
+    def get_raw_png(png)
+        image = ''
+        
+        png.height.times do |y|
+            png.width.times do |x|
+                rgb = png.get(x, y)
+
+                index = (y * png.width + x) * 3
                 image[index] = rgb[0]
                 image[index + 1] = rgb[1]
                 image[index + 2] = rgb[2]
@@ -283,4 +311,4 @@ class Object3D
     end
 end
 
-Object3D.new("miku.pmd").start()
+Object3D.new('miku.pmd').start()

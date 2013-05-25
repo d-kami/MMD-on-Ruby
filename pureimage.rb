@@ -838,14 +838,12 @@ class PNGIO < ImageIO
           # IHDR: Read header.
           width      = to_int(data, 0)
           height     = to_int(data, 4)
-          depth      = data[8].to_i
-          color_type = data[9].to_i
-          compress   = data[10].to_i
-          filter     = data[11].to_i
-          interlace  = data[12].to_i
-          
-          p data
-          
+          depth      = data[8].unpack('C')[0]
+          color_type = data[9].unpack('C')[0]
+          compress   = data[10].unpack('C')[0]
+          filter     = data[11].unpack('C')[0]
+          interlace  = data[12].unpack('C')[0]
+
           # Check support PNG format.
           if depth != 8 then
             raise "Not support color depth: #{depth}"
@@ -883,9 +881,9 @@ class PNGIO < ImageIO
         for y in 0..(height - 1)
           dat_index += 1
           for x in 0..(width - 1)
-            r = idat[dat_index    ].to_i
-            g = idat[dat_index + 1].to_i
-            b = idat[dat_index + 2].to_i
+            r = idat[dat_index    ].unpack('C')[0]
+            g = idat[dat_index + 1].unpack('C')[0]
+            b = idat[dat_index + 2].unpack('C')[0]
             dat_index += 3
             pixels[pix_index] = [r, g, b, 255]
             pix_index += 1
@@ -899,10 +897,10 @@ class PNGIO < ImageIO
         for y in 0..(height - 1)
           dat_index += 1
           for x in 0..(width - 1)
-            r = idat[dat_index    ].to_i
-            g = idat[dat_index + 1].to_i
-            b = idat[dat_index + 2].to_i
-            a = idat[dat_index + 3].to_i
+            r = idat[dat_index    ].unpack('C')[0]
+            g = idat[dat_index + 1].unpack('C')[0]
+            b = idat[dat_index + 2].unpack('C')[0]
+            a = idat[dat_index + 3].unpack('C')[0]
             dat_index += 4
             pixels[pix_index] = [r, g, b, a]
             pix_index += 1
@@ -974,10 +972,10 @@ class PNGIO < ImageIO
   private :write_int
 
   def to_int(str, offset)
-    value = str[offset].to_i
-    value = (value << 8) | (str[offset + 1].to_i & 0xff)
-    value = (value << 8) | (str[offset + 2].to_i & 0xff)
-    value = (value << 8) | (str[offset + 3].to_i & 0xff)
+    value = str[offset].unpack('C')[0]
+    value = (value << 8) | (str[offset + 1].unpack('C')[0] & 0xff)
+    value = (value << 8) | (str[offset + 2].unpack('C')[0] & 0xff)
+    value = (value << 8) | (str[offset + 3].unpack('C')[0] & 0xff)
     return value
   end
   private :to_int
@@ -1000,10 +998,10 @@ class PNGIO < ImageIO
   private :read_chunk
 
   def read_int(inp)
-    value = inp.read(1)[0].unpack('C')[0]
-    value = (value << 8) | inp.read(1)[0].unpack('C')[0]
-    value = (value << 8) | inp.read(1)[0].unpack('C')[0]
-    value = (value << 8) | inp.read(1)[0].unpack('C')[0]
+    value = inp.read(1).unpack('C')[0]
+    value = (value << 8) | inp.read(1).unpack('C')[0]
+    value = (value << 8) | inp.read(1).unpack('C')[0]
+    value = (value << 8) | inp.read(1).unpack('C')[0]
 
     return value
   end

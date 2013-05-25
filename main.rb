@@ -4,6 +4,9 @@ require './mmd.rb'
 require './bmp.rb'
 require './pureimage.rb'
 
+model = 'miku.pmd'
+shader = ['mmd.vert', 'mmd.frag']
+
 class Object3D
     def load_toons()
         10.times do |index|
@@ -72,9 +75,9 @@ class Object3D
                 rgb = png.get(x, y)
 
                 index = (y * png.width + x) * 3
-                image[index] = rgb[0]
-                image[index + 1] = rgb[1]
-                image[index + 2] = rgb[2]
+                image[index] = [rgb[0]].pack('C')
+                image[index + 1] = [rgb[2]].pack('C')
+                image[index + 2] = [rgb[1]].pack('C')
             end
         end
 
@@ -129,12 +132,18 @@ class Object3D
         GL.Enable(GL::CULL_FACE);
         GL.CullFace(GL::BACK);
         GL.Uniform1i(@locations[:is_edge], 0);
+        
+        GL.Enable(GL::DEPTH_TEST);
+        GL.DepthFunc(GL::LEQUAL);
+        GL.Enable(GL::BLEND)
+        GL.BlendFuncSeparate(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA, GL::SRC_ALPHA, GL::DST_ALPHA)
 
         @model.materials.each do |material|
             draw(material, start)
             start += material.vert_count
         end
         
+        GL.Disable(GL::BLEND)
         GL.CullFace(GL::FRONT);
         GL.Uniform1i(@locations[:is_edge], 1);
 
@@ -228,7 +237,7 @@ class Object3D
         GLUT.PostRedisplay()
     end
 
-    def initialize(model_name)
+    def initialize(model_name, vert_shader, frag_shader)
         @start_x = 0
         @start_y = 0
         @rotY = 0
@@ -247,7 +256,7 @@ class Object3D
         GL.Enable(GL::TEXTURE_2D)
         GL.DepthFunc(GL::GL_LESS)
 
-        @program = create_program('./shader/mmd.vert', './shader/mmd.frag')
+        @program = create_program("./shader/#{vert_shader}", "./shader/#{frag_shader}")
         
         @locations = Hash.new()
         @locations[:is_edge] = GL.GetUniformLocation(@program, 'isEdge')
@@ -311,4 +320,4 @@ class Object3D
     end
 end
 
-Object3D.new('miku.pmd').start()
+Object3D.new(model, shader[0], shader[1]).start()

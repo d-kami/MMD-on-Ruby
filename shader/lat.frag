@@ -32,6 +32,6 @@ void main (void)
 
         vec2 toonCoord = vec2(0.0, 0.5 * (1.0 - dot(normalize(lightDir), normalize(normal))));
         vec3 toon = texture2D(toonSampler, toonCoord).rgb;
-        gl_FragColor = vec4(color * toon, alpha);
+        gl_FragColor = vec4(color, alpha);
     }
 }

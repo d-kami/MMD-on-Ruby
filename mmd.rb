@@ -12,6 +12,10 @@ class MMDModel
     attr_reader :bone_names
     attr_reader :bone_disps
     attr_reader :ext_header
+    attr_reader :ext_bone
+    attr_reader :ext_skin
+    attr_reader :ext_bone_names
+    attr_reader :toon_texture
     
     def load(io)
         reader = MMDReader.new(io)
@@ -32,6 +36,14 @@ class MMDModel
         end
         
         @ext_header = load_ext_header(reader)
+        
+        if @ext_header.has_english == 1
+            @ext_bone = load_ext_bone(reader)
+            @ext_skin = load_ext_skin(reader)
+            @ext_bone_names = load_ext_bone_names(reader)
+        end
+        
+        @toon_texture = load_toon_texture(reader)
     end
     
     def load_header(reader)
@@ -140,6 +152,34 @@ class MMDModel
         ext_header.load(reader)
         
         return ext_header
+    end
+    
+    def load_ext_bone(reader)
+        ext_bone = MMDExtBone.new()
+        ext_bone.load(reader)
+        
+        return ext_bone
+    end
+    
+    def load_ext_skin(reader)
+        ext_skin = MMDExtSkin.new()
+        ext_skin.load(reader)
+        
+        return ext_skin
+    end
+    
+    def load_ext_bone_names(reader)
+        ext_bone_names = MMDExtBoneNames.new()
+        ext_bone_names.load(reader)
+        
+        return ext_bone_names
+    end
+    
+    def load_toon_texture(reader)
+        toon_texture = MMDToonTexture.new()
+        toon_texture.load(reader)
+        
+        return toon_texture
     end
 end
 
@@ -303,18 +343,6 @@ class MMDBoneNames
     end
 end
 
-class MMDExtHeader
-    attr_reader :has_english
-    attr_reader :name
-    attr_reader :comment
-    
-    def load(reader)
-        @has_english = reader.byte()
-        @name = reader.string(20)
-        @comment = reader.string(256)
-    end
-end
-
 class MMDBoneDisp
     attr_reader :bone_index
     attr_reader :disp_index
@@ -322,6 +350,77 @@ class MMDBoneDisp
     def load(reader)
         @bone_index = reader.ushort()
         @disp_index = reader.byte()
+    end
+end
+
+class MMDExtHeader
+    attr_reader :has_english
+    attr_reader :name
+    attr_reader :comment
+    
+    def load(reader)
+        @has_english = reader.byte()
+        
+        if @has_english
+            @name = reader.string(20)
+            @comment = reader.string(256)
+        end
+    end
+end
+
+class MMDExtBone
+    @@COUNT = 122
+    @@LENGTH = 20
+    attr_reader :names
+    
+    def load(reader)
+        @names = Array.new()
+    
+        @@COUNT.times{|index|
+            @names[index] = reader.string(@@LENGTH)
+        }
+    end
+end
+
+class MMDExtSkin
+    @@COUNT = 15
+    @@LENGTH = 20
+    attr_reader :names
+    
+    def load(reader)
+        @names = Array.new()
+    
+        @@COUNT.times{|index|
+            @names[index] = reader.string(@@LENGTH)
+        }
+    end
+end
+
+class MMDExtBoneNames
+    @@COUNT = 7
+    @@LENGTH = 50
+    attr_reader :names
+    
+    def load(reader)
+        @names = Array.new()
+
+        @@COUNT.times{|index|
+            @names[index] = reader.string(@@LENGTH)
+        }
+    end
+end
+
+class MMDToonTexture
+    @@COUNT = 10
+    @@LENGTH = 100
+    attr_reader :names
+    
+    def load(reader)
+        @names = Array.new()
+        
+        @@COUNT.times{|index|
+            @names[index] = reader.string(@@LENGTH)
+        }
     end
 end
 

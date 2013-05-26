@@ -8,18 +8,38 @@ model = 'miku.pmd'
 shader = ['mmd.vert', 'mmd.frag']
 
 class Object3D
-    def load_toons()
-        10.times do |index|
-            if index == 9
-                file_name = "toon#{index + 1}.bmp"
-            else
-                file_name = "toon0#{index + 1}.bmp"
+    def set_toon_names(model)
+        @toons = Array.new()
+    
+        if model.toon_texture == nil
+            10.times do |index|
+                if index == 9
+                    @toons[index] = "toon#{index + 1}.bmp"
+                else
+                    @toons[index] = "toon0#{index + 1}.bmp"
+                end
             end
-            
-            bitmap = BitMap.read("./toon/#{file_name}")
+        else
+            10.times do |index|
+                if model.toon_texture.names[index] != nil && model.toon_texture.names[index].length > 4
+                    @toons[index] = model.toon_texture.names[index]
+                else
+                    if index == 9
+                        @toons[index] = "toon#{index + 1}.bmp"
+                    else
+                        @toons[index] = "toon0#{index + 1}.bmp"
+                    end
+                end
+            end
+        end
+    end
+
+    def load_toons()
+        @toons.length.times do |index|
+            bitmap = BitMap.read("./toon/#{@toons[index]}")
             image = get_raw(bitmap)
 
-            @textures[file_name] = create_texture(image, bitmap.width, bitmap.height)
+            @textures[@toons[index]] = create_texture(image, bitmap.width, bitmap.height)
         end
     end
 
@@ -28,6 +48,9 @@ class Object3D
             @model = MMDModel.new()
             @model.load(file)
             @textures = Hash.new()
+            
+            set_toon_names(@model)
+            load_toons()
             
             @model.materials.each do |material|
                 if(@textures.key?(material.texture))
@@ -119,7 +142,7 @@ class Object3D
     
         GL.MatrixMode(GL::GL_MODELVIEW)
         GL.LoadIdentity()
-        GLU.LookAt(0.0, 10.0, -27.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
+        GLU.LookAt(0.0, 0.0, -37.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
 
         GL.ClearColor(0.0, 0.0, 1.0, 1.0)
         GL.Clear(GL::GL_COLOR_BUFFER_BIT | GL::GL_DEPTH_BUFFER_BIT)
@@ -173,15 +196,17 @@ class Object3D
             
             useTexture = 1.0
         end
-        
-        if material.toon_index == 9
-            toon = "toon#{material.toon_index + 1}.bmp"
+
+        toon_index = material.toon_index
+
+        if toon_index == 255
+            toon_index = 0
         else
-            toon = "toon0#{material.toon_index + 1}.bmp"
+            toon_index = toon_index + 1
         end
-        
+
         GL.ActiveTexture(GL::TEXTURE1)
-        GL.BindTexture(GL::TEXTURE_2D, @textures[toon])
+        GL.BindTexture(GL::TEXTURE_2D, @textures[@toons[toon_index]])
         GL.Uniform1i(@locations[:toon_sampler], 1)
         
         GL.Uniform1f(@locations[:use_texture], useTexture)
@@ -272,7 +297,6 @@ class Object3D
         
         init_light()
         load_model("./model/#{model_name}")
-        load_toons()
 
         GLUT.ReshapeFunc(method(:reshape).to_proc())
         GLUT.DisplayFunc(method(:display).to_proc())

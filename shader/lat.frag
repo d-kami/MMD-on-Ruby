@@ -30,8 +30,9 @@ void main (void)
         vec3 color = (1.0 - useTexture) * (ambient + gl_Color.rgb + specular) + useTexture * texture;
         color = clamp(color, 0.0, 1.0);
 
-        vec2 toonCoord = vec2(0.0, 0.5 * (1.0 - dot(normalize(lightDir), normalize(normal))));
+        float dotNL = max(0.0, dot(normalize(lightDir), normalize(normal)));
+        vec2 toonCoord = vec2(0.0, 0.5 * (1.0 - dotNL));
         vec3 toon = texture2D(toonSampler, toonCoord).rgb;
-        gl_FragColor = vec4(color, alpha);
+        gl_FragColor = vec4(color * toon, alpha);
     }
 }

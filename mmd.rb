@@ -1,4 +1,5 @@
 require 'kconv'
+require './mmdr.rb'
 
 class MMDModel
     attr_reader :header
@@ -247,10 +248,21 @@ class MMDMaterial
         @vert_count = reader.int()
         
         filename = reader.string(20).split('*')
-        @texture = filename[0]
+        
+        if filename[0] != nil
+            if filename[0].end_with?('.bmp') || filename[0].end_with?('.png')
+                @texture = filename[0]
+            else
+                @sphere = filename[0]
+            end
+        end
         
         if filename.length == 2
-            @sphere = filename[1]
+            if filename[1].end_with?('.bmp') || filename[1].end_with?('.png')
+                @texture = filename[1]
+            else
+                @sphere = filename[1]
+            end
         end
     end
 end
@@ -421,47 +433,5 @@ class MMDToonTexture
         @@COUNT.times{|index|
             @names[index] = reader.string(@@LENGTH)
         }
-    end
-end
-
-class MMDReader
-    def initialize(io)
-        @io = io
-    end
-
-    def byte()
-        return @io.read(1).unpack('C')[0]
-    end
-
-    def short()
-        return @io.read(2).unpack('s')[0]
-    end
-
-    def ushort()
-        return @io.read(2).unpack('S')[0]
-    end
-
-    def ushorts(count)
-        return @io.read(2 * count).unpack("S#{count}")
-    end
-
-    def int()
-        return @io.read(4).unpack('i')[0]
-    end
-
-    def float()
-        return @io.read(4).unpack('f')[0]
-    end
-    
-    def floats(count)
-        return @io.read(4 * count).unpack("f#{count}")
-    end
-    
-    def string(count)
-        return @io.read(count).unpack('Z*')[0].toutf8()
-    end
-    
-    def eof?()
-        return @io.eof?()
     end
 end

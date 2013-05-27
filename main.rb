@@ -53,6 +53,16 @@ class Object3D
             load_toons()
             
             @model.materials.each do |material|
+                if material.sphere != nil && !@textures.key?(material.sphere)
+                    bitmap = BitMap.read("./model/#{material.sphere}")
+                    image = get_raw(bitmap)
+                    @textures[material.sphere] = create_texture(image, bitmap.width, bitmap.height)
+                end
+            
+                if(material.texture == nil || (!material.texture.end_with?('.bmp') && !material.texture.end_with?('.png')))
+                    next
+                end
+                
                 if(@textures.key?(material.texture))
                     next
                 end
@@ -188,13 +198,28 @@ class Object3D
         GL.Uniform1f(@locations[:alpha], material.alpha)
         
         useTexture = 0.0
-
+        
         if material.texture != nil && material.texture.length > 0
             GL.ActiveTexture(GL::TEXTURE0)
             GL.BindTexture(GL::TEXTURE_2D, @textures[material.texture])
             GL.Uniform1i(@locations[:sampler], 0)
             
             useTexture = 1.0
+        end
+
+        if material.sphere != nil && material.sphere.length > 0
+            GL.ActiveTexture(GL::TEXTURE2)
+            GL.BindTexture(GL::TEXTURE_2D, @textures[material.sphere])
+            GL.Uniform1i(@locations[:is_sphere_use], 1)
+            GL.Uniform1i(@locations[:sphere_sampler], 2)
+            
+            if material.sphere.end_with?('.spa')
+                GL.Uniform1i(@locations[:is_sphere_add], 1)
+            else
+                GL.Uniform1i(@locations[:is_sphere_add], 0)
+            end
+        else
+            GL.Uniform1i(@locations[:is_sphere_use], 0)
         end
 
         toon_index = material.toon_index
@@ -294,7 +319,10 @@ class Object3D
         @locations[:light_dir] = GL.GetUniformLocation(@program, 'lightDir')
         @locations[:shininess] = GL.GetUniformLocation(@program, 'shininess')
         @locations[:specular_color] = GL.GetUniformLocation(@program, 'supecularColor')
-        
+        @locations[:is_sphere_use] = GL.GetUniformLocation(@program, 'isSphereUse')
+        @locations[:is_sphere_add] = GL.GetUniformLocation(@program, 'isSphereAdd')
+        @locations[:sphere_sampler] = GL.GetUniformLocation(@program, 'sphereSampler')
+
         init_light()
         load_model("./model/#{model_name}")
 

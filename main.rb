@@ -21,7 +21,7 @@ class Object3D
             end
         else
             10.times do |index|
-                if model.toon_texture.names[index] != nil && model.toon_texture.names[index].length > 4
+                if model.toon_texture.names[index] != nil && model.toon_texture.names[index].end_with?('.bmp')
                     @toons[index] = model.toon_texture.names[index]
                 else
                     if index == 9

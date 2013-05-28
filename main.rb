@@ -1,17 +1,19 @@
 require 'opengl'
 require 'glut'
 require './mmd.rb'
+require './motion.rb'
 require './bmp.rb'
 require './pureimage.rb'
 
-model = 'miku.pmd'
-shader = ['mmd.vert', 'mmd.frag']
+model_file = 'mikumetal.pmd'
+motion_file = 'kishimen.vmd'
+shader_file = ['mmd.vert', 'mmd.frag']
 
 class Object3D
-    def set_toon_names(model)
+    def set_toon_names()
         @toons = Array.new()
     
-        if model.toon_texture == nil
+        if @model.toon_texture == nil
             10.times do |index|
                 if index == 9
                     @toons[index] = "toon#{index + 1}.bmp"
@@ -21,8 +23,8 @@ class Object3D
             end
         else
             10.times do |index|
-                if model.toon_texture.names[index] != nil && model.toon_texture.names[index].end_with?('.bmp')
-                    @toons[index] = model.toon_texture.names[index]
+                if @model.toon_texture.names[index] != nil && @model.toon_texture.names[index].end_with?('.bmp')
+                    @toons[index] = @model.toon_texture.names[index]
                 else
                     if index == 9
                         @toons[index] = "toon#{index + 1}.bmp"
@@ -42,47 +44,32 @@ class Object3D
             @textures[@toons[index]] = create_texture(image, bitmap.width, bitmap.height)
         end
     end
-
-    def load_model(file_name)
-        File.open(file_name, 'rb'){|file|
-            @model = MMDModel.new()
-            @model.load(file)
-            @textures = Hash.new()
-            
-            set_toon_names(@model)
-            load_toons()
-            
-            @model.materials.each do |material|
-                if material.sphere != nil && !@textures.key?(material.sphere)
-                    bitmap = BitMap.read("./model/#{material.sphere}")
-                    image = get_raw(bitmap)
-                    @textures[material.sphere] = create_texture(image, bitmap.width, bitmap.height)
-                end
-            
-                if(material.texture == nil || (!material.texture.end_with?('.bmp') && !material.texture.end_with?('.png')))
-                    next
-                end
-                
-                if(@textures.key?(material.texture))
-                    next
-                end
-
-                if material.texture != nil && material.texture.length > 0
-                    if material.texture.end_with?('.bmp')
-                        bitmap = BitMap.read("./model/#{material.texture}")
-                        image = get_raw(bitmap)
-                        @textures[material.texture] = create_texture(image, bitmap.width, bitmap.height)
-                    elsif material.texture.end_with?('.png')
-                        pngio = PureImage::PNGIO.new()
-                        png = pngio.load("./model/#{material.texture}")
-                        image = get_raw_png(png)
-                        @textures[material.texture] = create_texture(image, png.width, png.height)
-                    end
-                end
-            end
-        }
+    
+    def load_bmp(file_name)
+        bitmap = BitMap.read(file_name)
+        image = get_raw(bitmap)
+        return create_texture(image, bitmap.width, bitmap.height)
     end
     
+    def load_sphere(material)
+        if material.sphere != nil && !@textures.key?(material.sphere)
+            @textures[material.sphere] = load_bmp("./model/#{material.sphere}")
+        end
+    end
+    
+    def load_texture(material)
+        if material.texture != nil && !@textures.key?(material.texture)
+            if material.texture.end_with?('.bmp')
+                @textures[material.texture] = load_bmp("./model/#{material.texture}")
+            elsif material.texture.end_with?('.png')
+                pngio = PureImage::PNGIO.new()
+                png = pngio.load("./model/#{material.texture}")
+                image = get_raw_png(png)
+                @textures[material.texture] = create_texture(image, png.width, png.height)
+            end
+        end
+    end
+
     def get_raw(bitmap)
         image = ''
         
@@ -133,6 +120,45 @@ class Object3D
 
         return texture
     end
+
+    def load_model(file_name)
+        File.open(file_name, 'rb'){|file|
+            @model = MMDModel.new()
+            @model.load(file)
+            @textures = Hash.new()
+
+            @model.materials.each do |material|
+                load_sphere(material)
+                load_texture(material)
+            end
+
+            set_toon_names()
+            load_toons()
+            set_skins()
+        }
+    end
+    
+    def set_skins()
+        @skin_map = Hash.new()
+    
+        @model.skins.each{|skin|
+            @skin_map[skin.name] = skin
+        }
+    end
+    
+    def load_motion(file_name)
+        File.open(file_name, 'rb'){|file|
+            @motion = MMDMotion.new()
+            @motion.load(file)
+            
+            @motion.skins.sort! do |skin1, skin2|
+                skin1.flame_no <=> skin2.flame_no
+            end
+            
+            @skin_index = 0
+            @frame = 0
+        }
+    end
     
     def init_light()
         @light_diffuse = [1.0, 1.0, 1.0]
@@ -146,10 +172,44 @@ class Object3D
         GL.LoadIdentity()
         GLU.Perspective(45.0, w.to_f() / h.to_f(), 0.1, 100.0)
     end
+    
+    def skin_motions()
+        while @skin_index < @motion.skins.length && @motion.skins[@skin_index].flame_no == @frame
+            skin_motion()
+
+            @skin_index += 1
+        end
+    end
+    
+    def skin_motion()
+        if !@skin_map.key?(@motion.skins[@skin_index].name)
+            return
+        end
+
+        skin = @skin_map[@motion.skins[@skin_index].name]
+
+        if skin.name == 'base'
+            skin.vertices.each do |base|
+                3.times{|i|
+                    @model.vertices[base.index].pos[i] = base.pos[i]
+                }
+            end
+        else
+            skin.vertices.each do |vertex|
+                base = @model.skins[0].vertices[vertex.index]
+
+                3.times{|i|
+                     @model.vertices[base.index].pos[i] = base.pos[i] + vertex.pos[i] * @motion.skins[@skin_index].weight
+                }
+            end
+        end
+    end
 
     def display()
+        skin_motions()
+            
         GL.UseProgram(@program)
-    
+
         GL.MatrixMode(GL::GL_MODELVIEW)
         GL.LoadIdentity()
         GLU.LookAt(0.0, 0.0, -37.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
@@ -162,12 +222,12 @@ class Object3D
 
         start = 0
 
-        GL.Enable(GL::CULL_FACE);
-        GL.CullFace(GL::BACK);
-        GL.Uniform1i(@locations[:is_edge], 0);
+        GL.Enable(GL::CULL_FACE)
+        GL.CullFace(GL::BACK)
+        GL.Uniform1i(@locations[:is_edge], 0)
         
-        GL.Enable(GL::DEPTH_TEST);
-        GL.DepthFunc(GL::LEQUAL);
+        GL.Enable(GL::DEPTH_TEST)
+        GL.DepthFunc(GL::LEQUAL)
         GL.Enable(GL::BLEND)
         GL.BlendFuncSeparate(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA, GL::SRC_ALPHA, GL::DST_ALPHA)
 
@@ -177,8 +237,8 @@ class Object3D
         end
         
         GL.Disable(GL::BLEND)
-        GL.CullFace(GL::FRONT);
-        GL.Uniform1i(@locations[:is_edge], 1);
+        GL.CullFace(GL::FRONT)
+        GL.Uniform1i(@locations[:is_edge], 1)
 
         start = 0
 
@@ -189,8 +249,9 @@ class Object3D
             
             start += material.vert_count
         end
-
         GLUT.SwapBuffers()
+        
+        @frame += 1
     end
     
     def draw(material, start)
@@ -287,7 +348,12 @@ class Object3D
         GLUT.PostRedisplay()
     end
 
-    def initialize(model_name, vert_shader, frag_shader)
+    def update(value)
+        GLUT.TimerFunc(33 , method(:update).to_proc(), 0)
+        GLUT.PostRedisplay()
+    end
+
+    def initialize(model_name, motion_name, vert_shader, frag_shader)
         @start_x = 0
         @start_y = 0
         @rotY = 0
@@ -325,11 +391,13 @@ class Object3D
 
         init_light()
         load_model("./model/#{model_name}")
+        load_motion("./motion/#{motion_name}")
 
         GLUT.ReshapeFunc(method(:reshape).to_proc())
         GLUT.DisplayFunc(method(:display).to_proc())
         GLUT.MouseFunc(method(:mouse).to_proc())
         GLUT.MotionFunc(method(:motion).to_proc())
+        GLUT.TimerFunc(33 , method(:update).to_proc(), 0)
     end
     
     def create_program(vert_name, frag_name)
@@ -372,4 +440,4 @@ class Object3D
     end
 end
 
-Object3D.new(model, shader[0], shader[1]).start()
+Object3D.new(model_file, motion_file, shader_file[0], shader_file[1]).start()

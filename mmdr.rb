@@ -6,6 +6,10 @@ class MMDReader
     def byte()
         return @io.read(1).unpack('C')[0]
     end
+    
+    def bytes(count)
+        return @io.read(count).unpack('C#{count}')
+    end
 
     def short()
         return @io.read(2).unpack('s')[0]

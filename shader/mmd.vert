@@ -12,7 +12,7 @@ void main(void)
     if (isEdge) {
         vec4 pos2 = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.xyz + gl_Normal, 1.0);
         vec4 norm = normalize(pos2 - pos);
-        gl_Position = pos + norm * 0.004 * pos.w;
+        gl_Position = pos + norm * 0.002 * pos.w;
         return;
     }
 

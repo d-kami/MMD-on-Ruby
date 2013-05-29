@@ -213,7 +213,7 @@ class Object3D
 
         GL.MatrixMode(GL::GL_MODELVIEW)
         GL.LoadIdentity()
-        GLU.LookAt(0.0, 0.0, -37.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
+        GLU.LookAt(0.0, 0.0, 37.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
 
         GL.ClearColor(0.0, 0.0, 1.0, 1.0)
         GL.Clear(GL::GL_COLOR_BUFFER_BIT | GL::GL_DEPTH_BUFFER_BIT)
@@ -224,7 +224,7 @@ class Object3D
         start = 0
 
         GL.Enable(GL::CULL_FACE)
-        GL.CullFace(GL::BACK)
+        GL.CullFace(GL::FRONT)
         GL.Uniform1i(@locations[:is_edge], 0)
         
         GL.Enable(GL::DEPTH_TEST)
@@ -238,7 +238,7 @@ class Object3D
         end
         
         GL.Disable(GL::BLEND)
-        GL.CullFace(GL::FRONT)
+        GL.CullFace(GL::BACK)
         GL.Uniform1i(@locations[:is_edge], 1)
 
         start = 0
@@ -338,7 +338,7 @@ class Object3D
             @rotY += dx
             @rotY = @rotY % 360
 
-            @rotX -= dy
+            @rotX += dy
             @rotX = @rotX % 360
         end
         

@@ -213,6 +213,9 @@ class MMDVertex
         @bone_nums = reader.ushorts(2)
         @bone_weight = reader.byte()
         @edge_flag = reader.byte() == 1
+        
+        @pos[2] = -@pos[2]
+        @normal[2] = -@normal[2]
     end
 end
 
@@ -282,6 +285,8 @@ class MMDBone
         @type = reader.byte()
         @ik_parent = reader.short()
         @pos = reader.floats(3)
+        
+        @pos[2] = -@pos[2]
     end
 end
 
@@ -330,6 +335,8 @@ class MMDSkinVertex
     def load(reader)
         @index = reader.int()
         @pos = reader.floats(3)
+        
+        @pos[2] = -@pos[2]
     end
 end
 

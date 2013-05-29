@@ -12,6 +12,7 @@ shader_file = ['mmd.vert', 'mmd.frag']
 class Object3D
     def set_toon_names()
         @toons = Array.new()
+        @toons[10] = 'toon00.bmp'
     
         if @model.toon_texture == nil
             10.times do |index|
@@ -258,14 +259,14 @@ class Object3D
         GL.Uniform3fv(@locations[:ambient], material.ambient)
         GL.Uniform1f(@locations[:alpha], material.alpha)
         
-        useTexture = 0.0
+        useTexture = 0
         
         if material.texture != nil && material.texture.length > 0
             GL.ActiveTexture(GL::TEXTURE0)
             GL.BindTexture(GL::TEXTURE_2D, @textures[material.texture])
             GL.Uniform1i(@locations[:sampler], 0)
             
-            useTexture = 1.0
+            useTexture = 1
         end
 
         if material.sphere != nil && material.sphere.length > 0
@@ -286,16 +287,14 @@ class Object3D
         toon_index = material.toon_index
 
         if toon_index == 255
-            toon_index = 0
-        else
-            toon_index = toon_index + 1
+            toon_index = 10
         end
 
         GL.ActiveTexture(GL::TEXTURE1)
         GL.BindTexture(GL::TEXTURE_2D, @textures[@toons[toon_index]])
         GL.Uniform1i(@locations[:toon_sampler], 1)
         
-        GL.Uniform1f(@locations[:use_texture], useTexture)
+        GL.Uniform1i(@locations[:use_texture], useTexture)
         GL.Uniform1f(@locations[:shininess], material.specularity)
         GL.Uniform3fv(@locations[:specular_color], material.specular)
         GL.Uniform3fv(@locations[:light_dir], @light_dir)

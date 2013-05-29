@@ -1,13 +1,14 @@
 uniform bool isEdge;
+uniform bool useTexture;
+uniform bool isSphereAdd;
+uniform bool isSphereUse;
+
 uniform float alpha;
 uniform float shininess;
-uniform float useTexture;
+
 uniform sampler2D sampler;
 uniform sampler2D toonSampler;
 uniform sampler2D sphereSampler;
-
-uniform bool isSphereUse;
-uniform bool isSphereAdd;
 
 uniform vec3 ambient;
 uniform vec3 specularColor;
@@ -30,8 +31,11 @@ void main (void)
         float specularWeight = pow(max(0.001, dot(halfAngle, normalize(normal))) , shininess);
         vec3 specular = specularWeight * specularColor;
         
-        vec3 texture = texture2DProj(sampler, gl_TexCoord[0]).rgb;
-        vec3 color = (1.0 - useTexture) * (ambient + gl_Color.rgb + specular) + useTexture * texture;
+        vec3 color = (ambient + gl_Color.rgb + specular);
+        
+        if(useTexture){
+            color *= texture2DProj(sampler, gl_TexCoord[0]).rgb;
+        }
         
         if(isSphereUse){
             vec2 sphereCoord = 0.5 * (1.0 + vec2(1.0, -1.0) * normalize(normal).xy);

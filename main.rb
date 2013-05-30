@@ -16,24 +16,24 @@ class Object3D
     
         if @model.toon_texture == nil
             10.times do |index|
-                if index == 9
-                    @toons[index] = "toon#{index + 1}.bmp"
-                else
-                    @toons[index] = "toon0#{index + 1}.bmp"
-                end
+                @toons[index] = get_default_toon(index)
             end
         else
             10.times do |index|
                 if @model.toon_texture.names[index] != nil && @model.toon_texture.names[index].end_with?('.bmp')
                     @toons[index] = @model.toon_texture.names[index]
                 else
-                    if index == 9
-                        @toons[index] = "toon#{index + 1}.bmp"
-                    else
-                        @toons[index] = "toon0#{index + 1}.bmp"
-                    end
+                    @toons[index] = get_default_toon(index)
                 end
             end
+        end
+    end
+    
+    def get_default_toon(index)
+        if index == 9
+            return "toon#{index + 1}.bmp"
+        else
+            return "toon0#{index + 1}.bmp"
         end
     end
 
@@ -206,9 +206,11 @@ class Object3D
         end
     end
 
-    def display()
+    def update_motion()
         skin_motions()
-            
+    end
+
+    def display()
         GL.UseProgram(@program)
 
         GL.MatrixMode(GL::GL_MODELVIEW)
@@ -221,10 +223,18 @@ class Object3D
         GL.Rotate(@rotX, 1, 0, 0)
         GL.Rotate(@rotY, 0, 1, 0)
 
-        start = 0
-
         GL.Enable(GL::CULL_FACE)
-        GL.CullFace(GL::FRONT)
+
+        draw_model()
+        draw_edge()
+        
+        GLUT.SwapBuffers()
+        
+        @frame += 1
+    end
+    
+    def draw_model()
+        GL.CullFace(GL::BACK)
         GL.Uniform1i(@locations[:is_edge], 0)
         
         GL.Enable(GL::DEPTH_TEST)
@@ -232,35 +242,43 @@ class Object3D
         GL.Enable(GL::BLEND)
         GL.BlendFuncSeparate(GL::SRC_ALPHA, GL::ONE_MINUS_SRC_ALPHA, GL::SRC_ALPHA, GL::DST_ALPHA)
 
+        start = 0
+
         @model.materials.each do |material|
-            draw(material, start)
+            draw_part(material, start)
             start += material.vert_count
         end
-        
+    end
+    
+    def draw_edge()
         GL.Disable(GL::BLEND)
-        GL.CullFace(GL::BACK)
+        GL.CullFace(GL::FRONT)
         GL.Uniform1i(@locations[:is_edge], 1)
 
         start = 0
 
         @model.materials.each do |material|
             if(material.edge_flag)
-                draw(material, start)
+                draw_part(material, start)
             end
             
             start += material.vert_count
         end
-        GLUT.SwapBuffers()
-        
-        @frame += 1
     end
     
-    def draw(material, start)
-        GL.Uniform3fv(@locations[:ambient], material.ambient)
-        GL.Uniform1f(@locations[:alpha], material.alpha)
+    def draw_part(material, start)
+        prepare_texture(material)
+        prepare_sphere(material)
+        prepare_toon(material)
+        prepare_material(material)
+        prepare_light()
         
+        draw_material(material, start)
+    end
+    
+    def prepare_texture(material)
         useTexture = 0
-        
+    
         if material.texture != nil && material.texture.length > 0
             GL.ActiveTexture(GL::TEXTURE0)
             GL.BindTexture(GL::TEXTURE_2D, @textures[material.texture])
@@ -268,7 +286,11 @@ class Object3D
             
             useTexture = 1
         end
-
+        
+        GL.Uniform1i(@locations[:use_texture], useTexture)
+    end
+    
+    def prepare_sphere(material)
         if material.sphere != nil && material.sphere.length > 0
             GL.ActiveTexture(GL::TEXTURE2)
             GL.BindTexture(GL::TEXTURE_2D, @textures[material.sphere])
@@ -283,7 +305,9 @@ class Object3D
         else
             GL.Uniform1i(@locations[:is_sphere_use], 0)
         end
+    end
 
+    def prepare_toon(material)
         toon_index = material.toon_index
 
         if toon_index == 255
@@ -293,15 +317,23 @@ class Object3D
         GL.ActiveTexture(GL::TEXTURE1)
         GL.BindTexture(GL::TEXTURE_2D, @textures[@toons[toon_index]])
         GL.Uniform1i(@locations[:toon_sampler], 1)
-        
-        GL.Uniform1i(@locations[:use_texture], useTexture)
+    end
+    
+    def prepare_material(material)
+        GL.Uniform1f(@locations[:alpha], material.alpha)
+        GL.Uniform3fv(@locations[:ambient], material.ambient)
         GL.Uniform1f(@locations[:shininess], material.specularity)
         GL.Uniform3fv(@locations[:specular_color], material.specular)
+        GL.Color(material.diffuse[0], material.diffuse[1], material.diffuse[2])
+    end
+    
+    def prepare_light
         GL.Uniform3fv(@locations[:light_dir], @light_dir)
         GL.Uniform3fv(@locations[:light_diffuse], @light_diffuse)
+    end
 
+    def draw_material(material, start)
         GL.Begin(GL::TRIANGLES)
-        GL.Color(material.diffuse[0], material.diffuse[1], material.diffuse[2])
 
         material.vert_count.times do |findex|
             vindex = @model.face.indices[start + findex]
@@ -349,28 +381,28 @@ class Object3D
 
     def update(value)
         GLUT.TimerFunc(33 , method(:update).to_proc(), 0)
+        
+        update_motion()
+        
         GLUT.PostRedisplay()
     end
 
-    def initialize(model_name, motion_name, vert_shader, frag_shader)
+    def initialize()
         @start_x = 0
         @start_y = 0
         @rotY = 0
         @rotX = 0
         @drag_flg = false
         
-        GLUT.InitWindowPosition(100, 100)
-        GLUT.InitWindowSize(450,450)
-        GLUT.Init()
-        GLUT.InitDisplayMode(GLUT::GLUT_DOUBLE | GLUT::GLUT_RGB | GLUT::GLUT_DEPTH)
-        GLUT.CreateWindow('MMD on Ruby')
-
-        GL.Enable(GL::GL_AUTO_NORMAL)
-        GL.Enable(GL::GL_NORMALIZE)
-        GL.Enable(GL::GL_DEPTH_TEST)
-        GL.Enable(GL::TEXTURE_2D)
-        GL.DepthFunc(GL::GL_LESS)
-
+        init_light()
+    end
+    
+    def load(model_name, motion_name)
+        load_model("./model/#{model_name}")
+        load_motion("./motion/#{motion_name}")
+    end
+    
+    def load_shader(vert_shader, frag_shader)
         @program = create_program("./shader/#{vert_shader}", "./shader/#{frag_shader}")
         
         @locations = Hash.new()
@@ -387,11 +419,9 @@ class Object3D
         @locations[:is_sphere_use] = GL.GetUniformLocation(@program, 'isSphereUse')
         @locations[:is_sphere_add] = GL.GetUniformLocation(@program, 'isSphereAdd')
         @locations[:sphere_sampler] = GL.GetUniformLocation(@program, 'sphereSampler')
-
-        init_light()
-        load_model("./model/#{model_name}")
-        load_motion("./motion/#{motion_name}")
-
+    end
+    
+    def set_func()
         GLUT.ReshapeFunc(method(:reshape).to_proc())
         GLUT.DisplayFunc(method(:display).to_proc())
         GLUT.MouseFunc(method(:mouse).to_proc())
@@ -433,10 +463,34 @@ class Object3D
         
         return shader
     end
+    
+    def set_gl_parameter()
+        GL.Enable(GL::GL_AUTO_NORMAL)
+        GL.Enable(GL::GL_NORMALIZE)
+        GL.Enable(GL::GL_DEPTH_TEST)
+        GL.Enable(GL::TEXTURE_2D)
+        GL.DepthFunc(GL::GL_LESS)
+    end
+    
+    def create_window(x, y, width, height)
+        GLUT.InitWindowPosition(x, y)
+        GLUT.InitWindowSize(width, height)
+        GLUT.Init()
+        GLUT.InitDisplayMode(GLUT::GLUT_DOUBLE | GLUT::GLUT_RGB | GLUT::GLUT_DEPTH)
+        GLUT.CreateWindow('MMD on Ruby')
+    end
 
     def start()
         GLUT.MainLoop()
     end
 end
 
-Object3D.new(model_file, motion_file, shader_file[0], shader_file[1]).start()
+object = Object3D.new()
+object.create_window(100, 100, 450, 450)
+object.set_gl_parameter()
+
+object.load(model_file, motion_file)
+object.load_shader(shader_file[0], shader_file[1])
+
+object.set_func()
+object.start()

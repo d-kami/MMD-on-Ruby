@@ -225,6 +225,13 @@ class MMDFace
     def load(reader)
         count = reader.int()
         @indices = reader.ushorts(count)
+        
+        0.step(@indices.length, 3){|index|
+            index0 = @indices[index]
+            
+            @indices[index] = @indices[index + 1]
+            @indices[index + 1] = index0
+        }
     end
 end
 

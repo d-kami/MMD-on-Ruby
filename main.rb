@@ -280,8 +280,6 @@ class Object3D
         draw_edge()
         
         GLUT.SwapBuffers()
-        
-        @frame += 1
     end
     
     #モデル描画
@@ -476,6 +474,8 @@ class Object3D
         
         #再描画要求
         GLUT.PostRedisplay()
+        
+        @frame += 1
     end
 
     #初期化

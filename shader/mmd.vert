@@ -1,22 +1,47 @@
 uniform bool isEdge;
 
-varying vec3 position;
-varying vec3 normal;
+attribute float boneWeight;
+attribute vec3 vectorFromBone1;
+attribute vec3 vectorFromBone2;
+attribute vec4 bone1Rotation;
+attribute vec4 bone2Rotation;
+attribute vec3 bone1Position;
+attribute vec3 bone2Position;
+attribute vec3 vertNormal;
+attribute vec2 texCoord;
+
+varying vec3 vPosition;
+varying vec3 vNormal;
+varying vec2 vTexCoord;
+
+vec3 qtransform(vec4 q, vec3 v) {
+    return v + 2.0 * cross(cross(v, q.xyz) - q.w*v, q.xyz);
+}
 
 void main(void)
 {
-    vec4 pos = gl_ModelViewProjectionMatrix * gl_Vertex;
-    position = (gl_ModelViewMatrix * vec4(gl_Vertex.xyz, 1.0)).xyz;
-    normal = gl_NormalMatrix * gl_Normal;
+    vec3 position = qtransform(bone1Rotation, vectorFromBone1) + bone1Position;
+    vec3 normal = qtransform(bone1Rotation, vertNormal);
+
+    vPosition = (gl_ModelViewProjectionMatrix * vec4(position, 1.0)).xyz;
+    vNormal = gl_NormalMatrix * normal;
+
+    if (boneWeight < 0.99) {
+        vec3 p2 = qtransform(bone2Rotation, vectorFromBone2) + bone2Position;
+        vec3 n2 = qtransform(bone2Rotation, gl_NormalMatrix * gl_Normal);
+
+        position = mix(p2, position, boneWeight);
+        normal = normalize(mix(n2, normal, boneWeight));
+    }
 
     if (isEdge) {
-        vec4 pos2 = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.xyz + gl_Normal, 1.0);
+        vec4 pos = gl_ModelViewProjectionMatrix * vec4(position, 1.0);
+        vec4 pos2 = gl_ModelViewProjectionMatrix * vec4(position + gl_Normal, 1.0);
         vec4 norm = normalize(pos2 - pos);
-        gl_Position = pos + norm * 0.002 * pos.w;
+        gl_Position = pos + norm * 0.002;
         return;
     }
 
-    gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;
-    gl_FrontColor = gl_Color;
-    gl_Position = pos;
+    vTexCoord = texCoord;
+    gl_Position = gl_ModelViewProjectionMatrix * vec4(position, 1.0);
 }

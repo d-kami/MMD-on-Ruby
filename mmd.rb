@@ -226,7 +226,7 @@ class MMDFace
         count = reader.int()
         @indices = reader.ushorts(count)
         
-        0.step(@indices.length, 3){|index|
+        0.step(@indices.length - 1, 3){|index|
             index0 = @indices[index]
             
             @indices[index] = @indices[index + 1]

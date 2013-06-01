@@ -161,6 +161,9 @@ class Object3D
                 load_texture(material)
             end
 
+            init_vertices()
+            init_vertex_info()
+
             #toonファイル名を設定し読み込む
             set_toon_names()
             load_toons()
@@ -168,6 +171,70 @@ class Object3D
             #表情を連想配列で管理するように設定する
             set_skins()
         }
+    end
+    
+    def init_vertices()
+        weight = Array.new()
+        vectors1 = Array.new()
+        vectors2 = Array.new()
+        positions1 = Array.new()
+        positions2 = Array.new()
+        rotations1 = Array.new()
+        rotations2 = Array.new()
+
+        @model.vertices.length.times do |i|
+            vertex = @model.vertices[i]
+            bone1 = @model.bones[vertex.bone_nums[0]]
+            bone2 = @model.bones[vertex.bone_nums[1]]
+            weight[i] = vertex.bone_weight
+            
+            3.times do |j|
+                vectors1[3 * i + j] = vertex.pos[j] - bone1.pos[j]
+                vectors2[3 * i + j] = vertex.pos[j] - bone2.pos[j]
+                positions1[3 * i + j] = bone1.pos[j]
+                positions2[3 * i + j] = bone2.pos[j]
+                rotations1[4 * i + j] = 0.0
+                rotations2[4 * i + j] = 0.0
+            end
+            
+            rotations1[4 * i + 3] = 1.0
+            rotations2[4 * i + 3] = 1.0
+        end
+        
+        @buffers = Hash.new()
+        @buffers[:bone_weight] = create_buffer(weight)
+        @buffers[:vector_from_bone1] = create_buffer(vectors1)
+        @buffers[:vector_from_bone2] = create_buffer(vectors2)
+        @buffers[:bone1_rotation] = create_buffer(rotations1)
+        @buffers[:bone2_rotation] = create_buffer(rotations2)
+        @buffers[:bone1_position] = create_buffer(positions1)
+        @buffers[:bone2_position] = create_buffer(positions2)
+        
+        indexBuffer = GL.GenBuffers(1)[0]
+        GL.BindBuffer(GL::ELEMENT_ARRAY_BUFFER, indexBuffer)
+        GL.BufferData(GL::ELEMENT_ARRAY_BUFFER, @model.face.indices.length * 2, @model.face.indices.pack('v*'), GL_STATIC_DRAW);
+        @buffers[:indices] = indexBuffer
+    end
+    
+    def init_vertex_info()
+        normals = Array.new()
+        texcoords = Array.new()
+
+        @model.vertices.length.times{|index|
+            normals[index] = @model.vertices[index].normal
+            texcoords[index] = @model.vertices[index].uv
+        }
+        
+        @buffers[:normal] = create_buffer(normals.flatten())
+        @buffers[:texcoord] = create_buffer(texcoords.flatten())
+    end
+    
+    def create_buffer(array)
+        buffer = GL.GenBuffers(1)[0]
+        GL.BindBuffer(GL::ARRAY_BUFFER, buffer)
+        GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_STATIC_DRAW)
+
+        return buffer
     end
     
     #表情を連想配列で管理するように設定する
@@ -267,11 +334,13 @@ class Object3D
         GL.Clear(GL::GL_COLOR_BUFFER_BIT | GL::GL_DEPTH_BUFFER_BIT)
 
         #モデルの回転
-        GL.Rotate(@rotX, 1, 0, 0)
-        GL.Rotate(@rotY, 0, 1, 0)
+        #GL.Rotate(@rotX, 1, 0, 0)
+        #GL.Rotate(@rotY, 0, 1, 0)
 
         #カリングを有効にする
         GL.Enable(GL::CULL_FACE)
+        
+        send_attributes()
 
         #モデル描画
         draw_model()
@@ -403,7 +472,7 @@ class Object3D
         GL.Uniform3fv(@locations[:ambient], material.ambient)
         GL.Uniform1f(@locations[:shininess], material.specularity)
         GL.Uniform3fv(@locations[:specular_color], material.specular)
-        GL.Color(material.diffuse[0], material.diffuse[1], material.diffuse[2])
+        GL.Uniform3fv(@locations[:diffuse], material.diffuse)
     end
     
     #光源の設定
@@ -414,26 +483,28 @@ class Object3D
 
     #マテリアルの描画
     def draw_material(material, start)
-        GL.Begin(GL::TRIANGLES)
-
-        material.vert_count.times do |findex|
-            #1頂点ずつ情報を取得
-            vindex = @model.face.indices[start + findex]
-            vertex = @model.vertices[vindex]
-            pos = vertex.pos
-            normal = vertex.normal
-            uv = vertex.uv
-            
-            #1頂点ずつOpenGLに情報を渡す
-            GL.TexCoord2f(uv[0], uv[1])
-            GL.Normal(normal[0], normal[1], normal[2])
-            GL.Vertex(pos[0], pos[1], pos[2])
-        end
-
-        GL.End()
+        GL.BindBuffer(GL::ELEMENT_ARRAY_BUFFER, @buffers[:indices])
+        GL.DrawElements(GL::TRIANGLES, material.vert_count, GL::UNSIGNED_SHORT, start * 2);
         
         #テクスチャ解除
         GL.BindTexture(GL::TEXTURE_2D, 0)
+    end
+    
+    def send_attributes()
+        send_attribute(:bone_weight, 1)
+        send_attribute(:vector_from_bone1, 3)
+        send_attribute(:vector_from_bone2, 3)
+        send_attribute(:bone1_rotation, 4)
+        send_attribute(:bone2_rotation, 4)
+        send_attribute(:bone1_position, 3)
+        send_attribute(:bone2_position, 3)
+        send_attribute(:normal, 3)
+        send_attribute(:texcoord, 2)
+    end
+    
+    def send_attribute(label, size)
+        GL.BindBuffer(GL_ARRAY_BUFFER, @buffers[label])
+        GL.VertexAttribPointer(@locations[label], size, GL_FLOAT, false, 0, 0)
     end
 
     #マウスのボタンが押されたときと離されたときのイベント
@@ -510,9 +581,25 @@ class Object3D
         @locations[:light_dir] = GL.GetUniformLocation(@program, 'lightDir')
         @locations[:shininess] = GL.GetUniformLocation(@program, 'shininess')
         @locations[:specular_color] = GL.GetUniformLocation(@program, 'supecularColor')
+        @locations[:diffuse] = GL.GetUniformLocation(@program, 'diffuse')
         @locations[:is_sphere_use] = GL.GetUniformLocation(@program, 'isSphereUse')
         @locations[:is_sphere_add] = GL.GetUniformLocation(@program, 'isSphereAdd')
         @locations[:sphere_sampler] = GL.GetUniformLocation(@program, 'sphereSampler')
+        
+        attribute(:bone_weight, 'boneWeight')
+        attribute(:vector_from_bone1, 'vectorFromBone1')
+        attribute(:vector_from_bone2, 'vectorFromBone2')
+        attribute(:bone1_rotation, 'bone1Rotation')
+        attribute(:bone2_rotation, 'bone2Rotation')
+        attribute(:bone1_position, 'bone1Position')
+        attribute(:bone2_position, 'bone2Position')
+        attribute(:normal, 'vertNormal')
+        attribute(:texcoord, 'texCoord')
+    end
+    
+    def attribute(label, name)
+        @locations[label] = GL.GetAttribLocation(@program, name)
+        GL.EnableVertexAttribArray(@locations[label])
     end
     
     #シェーダをコンパイルして、リンクする
@@ -554,10 +641,8 @@ class Object3D
     
     #OpenGL用のパラメータを設定
     def set_gl_parameter()
-        GL.Enable(GL::GL_AUTO_NORMAL)
-        GL.Enable(GL::GL_NORMALIZE)
-        GL.Enable(GL::GL_DEPTH_TEST)
         GL.Enable(GL::TEXTURE_2D)
+        GL.Enable(GL::GL_DEPTH_TEST)
         GL.DepthFunc(GL::GL_LESS)
     end
     

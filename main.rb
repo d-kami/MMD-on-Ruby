@@ -2,10 +2,10 @@
 
 require 'opengl'
 require 'glut'
-require './mmd.rb'
-require './motion.rb'
-require './bmp.rb'
-require './pureimage.rb'
+require './lib/mmd.rb'
+require './lib/motion.rb'
+require './lib/image/bmp.rb'
+require './lib/image/pureimage.rb'
 
 #読み込むモデルファイルのファイル名
 model_file = 'mikumetal.pmd'
@@ -251,11 +251,6 @@ class Object3D
         File.open(file_name, 'rb'){|file|
             @motion = MMDMotion.new()
             @motion.load(file)
-            
-            #表情の順番をflame_noでソートする
-            @motion.skins.sort! do |skin1, skin2|
-                skin1.flame_no <=> skin2.flame_no
-            end
             
             @skin_index = 0
             @frame = 0

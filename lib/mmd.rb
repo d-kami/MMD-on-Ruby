@@ -1,5 +1,5 @@
 require 'kconv'
-require './mmdr.rb'
+require './lib/mmdr.rb'
 
 class MMDModel
     attr_reader :header

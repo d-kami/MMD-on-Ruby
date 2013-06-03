@@ -1,4 +1,4 @@
-require './mmdr.rb'
+require './lib/mmdr.rb'
 
 class MMDMotion
     attr_reader :header
@@ -29,6 +29,10 @@ class MMDMotion
             motions[index] = motion
         }
         
+        motions.sort! do |motion1, motion2|
+            motion1.flame_no <=> motion2.flame_no
+        end
+        
         return motions
     end
     
@@ -41,6 +45,10 @@ class MMDMotion
             
             skins[index] = skin
         }
+
+        skins.sort! do |skin1, skin2|
+            skin1.flame_no <=> skin2.flame_no
+        end
         
         return skins
     end

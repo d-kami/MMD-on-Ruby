@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # file: pureimage.rb
 #
 # Copyright (C) 2005 NISHIMOTO Keisuke.

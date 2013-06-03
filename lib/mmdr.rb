@@ -1,3 +1,5 @@
+# coding: utf-8
+
 class MMDReader
     def initialize(io)
         @io = io

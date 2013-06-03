@@ -1,19 +1,21 @@
+# coding: utf-8
+
 class Quaternion
     attr_reader :values
     
-    #Še—v‘f‚Ìindex
+    #å„è¦ç´ ã®index
     @@X = 0
     @@Y = 1
     @@Z = 2
     @@W = 3
 
-    #ƒNƒH[ƒ^ƒjƒIƒ“‚Ì‰Šú‰»‚ğs‚¤
+    #ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã®åˆæœŸåŒ–ã‚’è¡Œã†
     def initialize(x = 0, y = 0, z = 0, w = 0)
         @values = Array.new()
         set(x, y, z, w)
     end
     
-    #ˆø”‚Ìx, y, z, w‚ğ‚±‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚ÉŠi”[‚·‚é
+    #å¼•æ•°ã®x, y, z, wã‚’ã“ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã«æ ¼ç´ã™ã‚‹
     def set(x, y, z, w)
         @values[@@X] = x.to_f()
         @values[@@Y] = y.to_f()
@@ -21,21 +23,21 @@ class Quaternion
         @values[@@W] = w.to_f()
     end
     
-    #ˆø”‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚à‚µ‚­‚Í”z—ñ‚Ì’l‚ğ‚±‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚ÉŠi”[‚·‚é
+    #å¼•æ•°ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã‚‚ã—ãã¯é…åˆ—ã®å€¤ã‚’ã“ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã«æ ¼ç´ã™ã‚‹
     def set_array(other)
         4.times do |index|
             @values[index] = other[index].to_f()
         end
     end
     
-    #‚±‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚Æˆø”‚Ì‘«‚µZ‚ğs‚¢Œ‹‰Ê‚ğŠi”[‚·‚é
+    #ã“ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã¨å¼•æ•°ã®è¶³ã—ç®—ã‚’è¡Œã„çµæœã‚’æ ¼ç´ã™ã‚‹
     def add(other)
         4.times do |index|
             @values[index] += other[index]
         end
     end
     
-    #‚±‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚Æˆø”‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚ÌŠ|‚¯Z‚ğs‚¢Œ‹‰Ê‚ğŠi”[‚·‚é
+    #ã“ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã¨å¼•æ•°ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã®æ›ã‘ç®—ã‚’è¡Œã„çµæœã‚’æ ¼ç´ã™ã‚‹
     def mul(other)
         a = self
         b = other
@@ -74,7 +76,7 @@ class Quaternion
         return result
     end
     
-    #‚±‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚Ìw‚ğŒvZ‚·‚é
+    #ã“ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã®wã‚’è¨ˆç®—ã™ã‚‹
     def cal_w()
         x = @values[@@X]
         y = @values[@@Y]
@@ -83,17 +85,17 @@ class Quaternion
         @values[@@W] = -Math::sqrt((1.0 - x * x - y * y - z * z).abs())
     end
     
-    #index”Ô–Ú‚Ì—v‘f‚ğ•Ô‚·
+    #indexç•ªç›®ã®è¦ç´ ã‚’è¿”ã™
     def [](index)
         return @values[index]
     end
     
-    #index”Ô–Ú‚Ì—v‘f‚Évalue‚ğ“ü‚ê‚é
+    #indexç•ªç›®ã®è¦ç´ ã«valueã‚’å…¥ã‚Œã‚‹
     def []=(index, value)
         @values[index] = value
     end
     
-    #‚±‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚Ìƒmƒ‹ƒ€‚Ì“ñæ‚ğ•Ô‚·
+    #ã“ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã®ãƒãƒ«ãƒ ã®äºŒä¹—ã‚’è¿”ã™
     def norm2()
         ret = 0
         
@@ -104,19 +106,19 @@ class Quaternion
         return ret
     end
     
-    #‚±‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚Ìƒmƒ‹ƒ€‚ğ•Ô‚·
+    #ã“ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã®ãƒãƒ«ãƒ ã‚’è¿”ã™
     def norm
         Math.sqrt(norm2())
     end
     
-    #ˆø”‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚Ì‹tƒNƒH[ƒ^ƒjƒIƒ“‚ğ•Ô‚·
+    #å¼•æ•°ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã®é€†ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã‚’è¿”ã™
     def Quaternion.inverse(quat)
         n = quat.norm2()
         
         return Quaternion.new(-quat[@@X] / n, -quat[@@Y] / n, -quat[@@Z] / n, quat[@@W] / n)
     end
     
-    #ˆø”‚ÌƒNƒH[ƒ^ƒjƒIƒ“‚Ì‹¤–ğƒNƒH[ƒ^ƒjƒIƒ“‚ğ•Ô‚·
+    #å¼•æ•°ã®ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã®å…±å½¹ã‚¯ã‚©ãƒ¼ã‚¿ãƒ‹ã‚ªãƒ³ã‚’è¿”ã™
     def Quaternion.conj(quat)
         return Quaternion.new(-quat[@@X], -quat[@@Y], -quat[@@Z], quat[@@W])
     end

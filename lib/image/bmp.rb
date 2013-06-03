@@ -1,3 +1,5 @@
+# coding: utf-8
+
 #
 # $Id: bmp.rb,v 0.5 2005/08/27 23:14:15 yoichi Exp $
 #  bmp.rb  -- a toolkit for bitmap(BMP) image
@@ -5,8 +7,8 @@
 # Copyright (c) 2005 YOKOGAWA "gossoh" Yoichi <yokogawa-yoichi@miobox.jp>
 # You can redistribute it and/or modify it under the same term as Ruby.
 #
-# ¦ BMPƒtƒ@ƒCƒ‹‚Ìƒtƒ@ƒCƒ‹ƒtƒH[ƒ}ƒbƒg‚É‚Â‚¢‚Ä‚ÍA
-#    http://www.kk.iij4u.or.jp/~kondo/bmp/ ‚ğQl‚É‚µ‚Ü‚µ‚½
+# â€» BMPãƒ•ã‚¡ã‚¤ãƒ«ã®ãƒ•ã‚¡ã‚¤ãƒ«ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆã«ã¤ã„ã¦ã¯ã€
+#    http://www.kk.iij4u.or.jp/~kondo/bmp/ ã‚’å‚è€ƒã«ã—ã¾ã—ãŸ
 
 class BitMap
   def initialize(width, height, dpi = 96)
@@ -16,7 +18,7 @@ class BitMap
     @buf_size = @line_size * height
     @buf = "\000" * @buf_size
     @bit_count = 24
-    @compression = 0  # ˆ³k–³‚µ
+    @compression = 0  # åœ§ç¸®ç„¡ã—
     @size_image = 0
     @x_pix_per_meter = (39.375 * dpi).round
     @y_pix_per_meter = (39.375 * dpi).round
@@ -37,7 +39,7 @@ class BitMap
   attr_accessor :buf
   attr_reader :width, :height
 
-  # BMPƒtƒ@ƒCƒ‹‚ğo—Í‚·‚é
+  # BMPãƒ•ã‚¡ã‚¤ãƒ«ã‚’å‡ºåŠ›ã™ã‚‹
   def write(filename)
     file_size = 14 + 40 + @buf_size
     data_offset = 14 + 40
@@ -55,7 +57,7 @@ class BitMap
   end
 
 
-  # BMPƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚Ş
+  # BMPãƒ•ã‚¡ã‚¤ãƒ«ã‚’èª­ã¿è¾¼ã‚€
   def BitMap.read(filename)
     buf = nil
     open(filename, "rb") do |f|
@@ -100,7 +102,7 @@ class BitMap
   end
 
 
-  # (x1, y1) - (x2, y2)‚Ì•”•ª‰æ‘œ‚ğæ‚èo‚·
+  # (x1, y1) - (x2, y2)ã®éƒ¨åˆ†ç”»åƒã‚’å–ã‚Šå‡ºã™
   def clip(x1, y1, x2, y2)
     return if x1 > x2
     return if y1 > y2
@@ -129,7 +131,7 @@ class BitMap
   end
 
 
-  # x, y, r, g, b ‚Í®”‚Å‚ ‚é‚±‚Æ‚ğŠú‘Ò‚µ‚Ä‚¢‚é
+  # x, y, r, g, b ã¯æ•´æ•°ã§ã‚ã‚‹ã“ã¨ã‚’æœŸå¾…ã—ã¦ã„ã‚‹
   def pset(x, y, r, g, b)
     return if x < 0 or @width <= x
     return if y < 0 or @height <= y
@@ -145,8 +147,8 @@ class BitMap
     @buf[(@height - 1 - y) * @line_size + x * 3 + 2] = r
   end
 
-  # x, y‚Í®”‚Å‚ ‚é‚±‚Æ‚ğŠú‘Ò‚µ‚Ä‚¢‚é
-  # –ß‚è’l‚Í[r, g, b]‚È”z—ñ
+  # x, yã¯æ•´æ•°ã§ã‚ã‚‹ã“ã¨ã‚’æœŸå¾…ã—ã¦ã„ã‚‹
+  # æˆ»ã‚Šå€¤ã¯[r, g, b]ãªé…åˆ—
   def pget(x, y)
     x = 0 if x < 0
     x = @width - 1 if x >= @width
@@ -170,7 +172,7 @@ class BitMap
     @y_pix_per_meter = @x_pix_per_meter
   end
 
-  # x0, y0 ‚ÍA“\‚è•t‚¯‚én“_(¶ã)‚ÌÀ•W
+  # x0, y0 ã¯ã€è²¼ã‚Šä»˜ã‘ã‚‹å§‹ç‚¹(å·¦ä¸Š)ã®åº§æ¨™
   def paste(image, x0 = 0, y0 = 0)
     return if image == nil
     image.height.times do |from_y|

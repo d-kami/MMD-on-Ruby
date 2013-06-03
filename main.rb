@@ -334,8 +334,8 @@ class Object3D
         GL.Clear(GL::GL_COLOR_BUFFER_BIT | GL::GL_DEPTH_BUFFER_BIT)
 
         #モデルの回転
-        #GL.Rotate(@rotX, 1, 0, 0)
-        #GL.Rotate(@rotY, 0, 1, 0)
+        GL.Rotate(@rotX, 1, 0, 0)
+        GL.Rotate(@rotY, 0, 1, 0)
 
         #カリングを有効にする
         GL.Enable(GL::CULL_FACE)

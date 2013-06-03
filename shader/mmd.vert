@@ -28,7 +28,7 @@ void main(void)
 
     if (boneWeight < 0.99) {
         vec3 p2 = qtransform(bone2Rotation, vectorFromBone2) + bone2Position;
-        vec3 n2 = qtransform(bone2Rotation, gl_NormalMatrix * gl_Normal);
+        vec3 n2 = qtransform(bone2Rotation, normal);
 
         position = mix(p2, position, boneWeight);
         normal = normalize(mix(n2, normal, boneWeight));
@@ -36,9 +36,9 @@ void main(void)
 
     if (isEdge) {
         vec4 pos = gl_ModelViewProjectionMatrix * vec4(position, 1.0);
-        vec4 pos2 = gl_ModelViewProjectionMatrix * vec4(position + gl_Normal, 1.0);
+        vec4 pos2 = gl_ModelViewProjectionMatrix * vec4(position + normal, 1.0);
         vec4 norm = normalize(pos2 - pos);
-        gl_Position = pos + norm * 0.002;
+        gl_Position = pos + norm * 0.05;
         return;
     }
 

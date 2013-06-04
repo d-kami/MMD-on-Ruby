@@ -8,6 +8,7 @@ class Quaternion
     @@Y = 1
     @@Z = 2
     @@W = 3
+    @@COUNT = 4
 
     #クォータニオンの初期化を行う
     def initialize(x = 0, y = 0, z = 0, w = 0)
@@ -25,14 +26,14 @@ class Quaternion
     
     #引数のクォータニオンもしくは配列の値をこのクォータニオンに格納する
     def set_array(other)
-        4.times do |index|
+        @@COUNT.times do |index|
             @values[index] = other[index].to_f()
         end
     end
     
     #このクォータニオンと引数の足し算を行い結果を格納する
     def add(other)
-        4.times do |index|
+        @@COUNT.times do |index|
             @values[index] += other[index]
         end
     end
@@ -48,7 +49,7 @@ class Quaternion
         r[@@Z] = a[@@W] * b[@@Z] + a[@@X] * b[@@Y] - a[@@Y] * b[@@X] + a[@@Z] * b[@@W]
         r[@@W] = a[@@W] * b[@@W] - a[@@X] * b[@@X] - a[@@Y] * b[@@Y] - a[@@Z] * b[@@Z]
         
-        4.times do |index|
+        @@COUNT.times do |index|
             @values[index] = r[index]
         end
     end
@@ -99,7 +100,7 @@ class Quaternion
     def norm2()
         ret = 0
         
-        4.times do |index|
+        @@COUNT.times do |index|
             ret += @values[index] * @values[index]
         end
         

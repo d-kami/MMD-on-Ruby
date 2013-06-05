@@ -8,6 +8,8 @@ class Quaternion
     @@Y = 1
     @@Z = 2
     @@W = 3
+    
+    #要素数
     @@COUNT = 4
 
     #クォータニオンの初期化を行う
@@ -52,29 +54,6 @@ class Quaternion
         @@COUNT.times do |index|
             @values[index] = r[index]
         end
-    end
-    
-    def mul_vec3(vec3)
-        x = vec[0]
-        y = vec[1]
-        z = vec[2]
-        
-        qx = @values[@@X]
-        qy = @values[@@Y]
-        qz = @values[@@Z]
-        qw = @values[@@W]
-
-        ix = qw * x + qy * z - qz * y
-        iy = qw * y + qz * x - qx * z
-        iz = qw * z + qx * y - qy * x
-        iw = -qx * x - qy * y - qz * z
-
-        result = Array.new()
-        result[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
-        result[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
-        result[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
-        
-        return result
     end
     
     #このクォータニオンのwを計算する

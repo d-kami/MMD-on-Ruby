@@ -13,6 +13,18 @@ class Vector3
     #要素数
     @@COUNT = 3
     
+    def Vector3.X
+        return @@X
+    end
+    
+    def Vector3.Y
+        return @@Y
+    end
+    
+    def Vector3.Z
+        return @@Z
+    end
+    
     def initialize(x = 0, y = 0, z = 0)
         @values = Array.new()
         
@@ -89,29 +101,29 @@ class Vector3
     end
     
     def Vector3.dot(vec, vec2)
-        return vec[0] * vec2[0] + vec[1] * vec2[1] + vec[2] * vec2[2]
+        return vec[@@X] * vec2[@@X] + vec[@@Y] * vec2[@@Y] + vec[@@Z] * vec2[@@Z]
     end
     
     def Vector3.cross(vec, vec2)
         result = Vector3.new()
 
-        result[0] = vec[1] * vec2[2] - vec[2] * vec2[1]
-        result[1] = vec[2] * vec2[0] - vec[0] * vec2[2]
-        result[2] = vec[0] * vec2[1] - vec[1] * vec2[0]
+        result[@@X] = vec[@@Y] * vec2[@@Z] - vec[@@Z] * vec2[@@Y]
+        result[@@Y] = vec[@@Z] * vec2[@@X] - vec[@@X] * vec2[@@Z]
+        result[@@Z] = vec[@@X] * vec2[@@Y] - vec[@@Y] * vec2[@@X]
 
         return result
     end
     
     #引数のベクトルをクォータニオンを使って回転させる
     def Vector3.rotateByQuat(vec, quat)
-        x = vec[0]
-        y = vec[1]
-        z = vec[2]
+        x = vec[Vector3.X]
+        y = vec[Vector3.Y]
+        z = vec[Vector3.Z]
         
-        qx = quat[0]
-        qy = quat[1]
-        qz = quat[2]
-        qw = quat[3]
+        qx = quat[Quaternion.X]
+        qy = quat[Quaternion.Y]
+        qz = quat[Quaternion.Z]
+        qw = quat[Quaternion.W]
 
         ix = qw * x + qy * z - qz * y
         iy = qw * y + qz * x - qx * z
@@ -119,9 +131,9 @@ class Vector3
         iw = -qx * x - qy * y - qz * z
 
         result = Vector3.new()
-        result[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy
-        result[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz
-        result[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx
+        result[Vector3.X] = ix * qw + iw * -qx + iy * -qz - iz * -qy
+        result[Vector3.Y] = iy * qw + iw * -qy + iz * -qx - ix * -qz
+        result[Vector3.Z] = iz * qw + iw * -qz + ix * -qy - iy * -qx
         
         return result
     end

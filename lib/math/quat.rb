@@ -12,6 +12,22 @@ class Quaternion
     #要素数
     @@COUNT = 4
 
+    def Quaternion.X
+        return @@X
+    end
+    
+    def Quaternion.Y
+        return @@Y
+    end
+    
+    def Quaternion.Z
+        return @@Z
+    end
+    
+    def Quaternion.W
+        return @@W
+    end
+
     #クォータニオンの初期化を行う
     def initialize(x = 0, y = 0, z = 0, w = 0)
         @values = Array.new()

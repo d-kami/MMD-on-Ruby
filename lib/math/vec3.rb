@@ -137,4 +137,18 @@ class Vector3
         
         return result
     end
+    
+    def Vector3.add()
+        dst.set(vec1)
+        dst.add(vec2)
+        
+        return dst
+    end
+    
+    def Vector3.sub(vec1, vec2, dst)
+        dst.set(vec1)
+        dst.sub(vec2)
+        
+        return dst
+    end
 end

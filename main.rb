@@ -262,6 +262,27 @@ class Object3D
         @light_diffuse = [1.0, 1.0, 1.0]
         @light_dir = [0.5, 1.0, 0.5]
     end
+    
+    def move_bones(bones)
+        indivisualBoneMotions = Array.new()
+        boneMotions = Array.new()
+
+        @model.bones.each_with_index do |bone, index|
+        end
+    end
+    
+    def resolve_iks(model)
+        target = Vector3.new()
+        ikbone = Vector3.new()
+        axis = Vector3.new()
+        
+        tmpQ = Quaternion.new()
+        tmpR = Quaternion.new()
+        
+        model.iks.each do |ik|
+            maxangle = ik.weight * 4
+        end
+    end
 
     #描画領域のサイズの変更
     def reshape(w,h)

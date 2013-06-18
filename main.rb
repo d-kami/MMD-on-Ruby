@@ -4,8 +4,9 @@ require 'opengl'
 require 'glut'
 require './lib/mmd.rb'
 require './lib/motion.rb'
-require './lib/image/bmp.rb'
-require './lib/image/pureimage.rb'
+require './lib/shader.rb'
+require './lib/load_image.rb'
+require './lib/init_buffers.rb'
 
 #読み込むモデルファイルのファイル名
 model_file = 'mikumetal.pmd'
@@ -17,136 +18,9 @@ motion_file = 'kishimen.vmd'
 shader_file = ['mmd.vert', 'mmd.frag']
 
 class Object3D
-
-    #toonファイルの名前を配列にセットする
-    def set_toon_names()
-        @toons = Array.new()
-        
-        #toon_indexが-1のときのtoonファイル
-        @toons[10] = 'toon00.bmp'
-    
-        if @model.toon_texture == nil
-            #toonファイルの名前に指定が無い場合はデフォルトのファイル名を使う
-            10.times do |index|
-                @toons[index] = get_default_toon(index)
-            end
-        else
-            10.times do |index|
-                if @model.toon_texture.names[index] != nil && @model.toon_texture.names[index].end_with?('.bmp')
-                    #toonファイルの名前に指定がある
-                    @toons[index] = @model.toon_texture.names[index]
-                else
-                    #toonファイルの名前に指定が無いのでデフォルトのファイル名を使う
-                    @toons[index] = get_default_toon(index)
-                end
-            end
-        end
-    end
-    
-    #index番目のデフォルトのファイル名を返す
-    def get_default_toon(index)
-        if index == 9
-            return "toon#{index + 1}.bmp"
-        else
-            return "toon0#{index + 1}.bmp"
-        end
-    end
-
-    #toonファイルを読み込み、テクスチャとして設定する
-    def load_toons()
-        @toons.length.times do |index|
-            bitmap = BitMap.read("./toon/#{@toons[index]}")
-            image = get_raw(bitmap)
-
-            @textures[@toons[index]] = create_texture(image, bitmap.width, bitmap.height)
-        end
-    end
-    
-    #bmpを読み込み、テクスチャにして返す
-    def load_bmp(file_name)
-        bitmap = BitMap.read(file_name)
-        image = get_raw(bitmap)
-        return create_texture(image, bitmap.width, bitmap.height)
-    end
-    
-    #スフィアマップ用のテクスチャを読み込み設定する
-    def load_sphere(material)
-        if material.sphere != nil && !@textures.key?(material.sphere)
-            @textures[material.sphere] = load_bmp("./model/#{material.sphere}")
-        end
-    end
-    
-    #マテリアルに設定されているテクスチャを読み込む
-    def load_texture(material)
-        if material.texture != nil && !@textures.key?(material.texture)
-            #読み込むテクスチャが存在していて、まだ登録されてない場合の処理
-            
-            if material.texture.end_with?('.bmp')
-                #bmpファイルをテクスチャとする
-                @textures[material.texture] = load_bmp("./model/#{material.texture}")
-            elsif material.texture.end_with?('.png')
-                pngio = PureImage::PNGIO.new()
-                png = pngio.load("./model/#{material.texture}")
-                image = get_raw_png(png)
-                #pngファイルをテクスチャとする
-                @textures[material.texture] = create_texture(image, png.width, png.height)
-            end
-        end
-    end
-
-    #bitmapからRGB配列を取得する
-    def get_raw(bitmap)
-        image = ''
-        
-        bitmap.height.times do |y|
-            bitmap.width.times do |x|
-                rgb = bitmap.pget(x, y)
-
-                index = (y * bitmap.width + x) * 3
-                image[index] = rgb[0]
-                image[index + 1] = rgb[1]
-                image[index + 2] = rgb[2]
-            end
-        end
-
-        return image
-    end
-    
-    #pngからRGB配列を取得する
-    def get_raw_png(png)
-        image = ''
-        
-        png.height.times do |y|
-            png.width.times do |x|
-                rgb = png.get(x, y)
-
-                index = (y * png.width + x) * 3
-                image[index] = [rgb[0]].pack('C')
-                image[index + 1] = [rgb[2]].pack('C')
-                image[index + 2] = [rgb[1]].pack('C')
-            end
-        end
-
-        return image
-    end
-    
-    #テクスチャを作成して返す
-    def create_texture(image, width, height)
-        texture = GL.GenTextures(1)[0]
-        
-        GL.BindTexture(GL::TEXTURE_2D, texture)
-        GL.TexImage2D(GL::TEXTURE_2D, 0, GL::RGB, width, height, 0, GL::RGB, GL::UNSIGNED_BYTE, image)
-
-        GL.TexParameteri(GL::TEXTURE_2D, GL::TEXTURE_MAG_FILTER, GL::LINEAR)
-        GL.TexParameteri(GL::TEXTURE_2D, GL::TEXTURE_MIN_FILTER, GL::LINEAR)
-        
-        GL.TexParameteri(GL::TEXTURE_2D, GL::TEXTURE_WRAP_S, GL::REPEAT)
-        GL.TexParameteri(GL::TEXTURE_2D, GL::TEXTURE_WRAP_T, GL::REPEAT)
-
-        GL.BindTexture(GL::TEXTURE_2D, 0)
-
-        return texture
-    end
+    include Shader
+    include LoadImage
+    include InitBuffers
 
     #MMDのモデルファイルを読み込む
     def load_model(file_name)
@@ -157,84 +31,19 @@ class Object3D
 
             #マテリアルごとにスフィアマップ画像、テクスチャ画像を読み込む
             @model.materials.each do |material|
-                load_sphere(material)
-                load_texture(material)
+                load_sphere(material, @textures)
+                load_texture(material, @textures)
             end
 
-            init_vertices()
-            init_vertex_info()
+            @buffers = init_buffers(@model)
 
             #toonファイル名を設定し読み込む
-            set_toon_names()
-            load_toons()
+            @toons = create_toons(@model)
+            load_toons(@toons, @textures)
             
             #表情を連想配列で管理するように設定する
             set_skins()
         }
-    end
-    
-    def init_vertices()
-        weight = Array.new()
-        vectors1 = Array.new()
-        vectors2 = Array.new()
-        positions1 = Array.new()
-        positions2 = Array.new()
-        rotations1 = Array.new()
-        rotations2 = Array.new()
-
-        @model.vertices.length.times do |i|
-            vertex = @model.vertices[i]
-            bone1 = @model.bones[vertex.bone_nums[0]]
-            bone2 = @model.bones[vertex.bone_nums[1]]
-            weight[i] = vertex.bone_weight
-            
-            3.times do |j|
-                vectors1[3 * i + j] = vertex.pos[j] - bone1.pos[j]
-                vectors2[3 * i + j] = vertex.pos[j] - bone2.pos[j]
-                positions1[3 * i + j] = bone1.pos[j]
-                positions2[3 * i + j] = bone2.pos[j]
-                rotations1[4 * i + j] = 0.0
-                rotations2[4 * i + j] = 0.0
-            end
-            
-            rotations1[4 * i + 3] = 1.0
-            rotations2[4 * i + 3] = 1.0
-        end
-        
-        @buffers = Hash.new()
-        @buffers[:bone_weight] = create_buffer(weight)
-        @buffers[:vector_from_bone1] = create_buffer(vectors1)
-        @buffers[:vector_from_bone2] = create_buffer(vectors2)
-        @buffers[:bone1_rotation] = create_buffer(rotations1)
-        @buffers[:bone2_rotation] = create_buffer(rotations2)
-        @buffers[:bone1_position] = create_buffer(positions1)
-        @buffers[:bone2_position] = create_buffer(positions2)
-        
-        indexBuffer = GL.GenBuffers(1)[0]
-        GL.BindBuffer(GL::ELEMENT_ARRAY_BUFFER, indexBuffer)
-        GL.BufferData(GL::ELEMENT_ARRAY_BUFFER, @model.face.indices.length * 2, @model.face.indices.pack('v*'), GL_STATIC_DRAW);
-        @buffers[:indices] = indexBuffer
-    end
-    
-    def init_vertex_info()
-        normals = Array.new()
-        texcoords = Array.new()
-
-        @model.vertices.length.times{|index|
-            normals[index] = @model.vertices[index].normal
-            texcoords[index] = @model.vertices[index].uv
-        }
-        
-        @buffers[:normal] = create_buffer(normals.flatten())
-        @buffers[:texcoord] = create_buffer(texcoords.flatten())
-    end
-    
-    def create_buffer(array)
-        buffer = GL.GenBuffers(1)[0]
-        GL.BindBuffer(GL::ARRAY_BUFFER, buffer)
-        GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_STATIC_DRAW)
-
-        return buffer
     end
     
     #表情を連想配列で管理するように設定する
@@ -356,7 +165,7 @@ class Object3D
         #カリングを有効にする
         GL.Enable(GL::CULL_FACE)
         
-        send_attributes()
+        send_attributes(@buffers, @locations)
 
         #モデル描画
         draw_model()
@@ -500,27 +309,10 @@ class Object3D
     #マテリアルの描画
     def draw_material(material, start)
         GL.BindBuffer(GL::ELEMENT_ARRAY_BUFFER, @buffers[:indices])
-        GL.DrawElements(GL::TRIANGLES, material.vert_count, GL::UNSIGNED_SHORT, start * 2);
+        GL.DrawElements(GL::TRIANGLES, material.vert_count, GL::UNSIGNED_SHORT, start * 2)
         
         #テクスチャ解除
         GL.BindTexture(GL::TEXTURE_2D, 0)
-    end
-    
-    def send_attributes()
-        send_attribute(:bone_weight, 1)
-        send_attribute(:vector_from_bone1, 3)
-        send_attribute(:vector_from_bone2, 3)
-        send_attribute(:bone1_rotation, 4)
-        send_attribute(:bone2_rotation, 4)
-        send_attribute(:bone1_position, 3)
-        send_attribute(:bone2_position, 3)
-        send_attribute(:normal, 3)
-        send_attribute(:texcoord, 2)
-    end
-    
-    def send_attribute(label, size)
-        GL.BindBuffer(GL_ARRAY_BUFFER, @buffers[label])
-        GL.VertexAttribPointer(@locations[label], size, GL_FLOAT, false, 0, 0)
     end
 
     #マウスのボタンが押されたときと離されたときのイベント
@@ -577,82 +369,11 @@ class Object3D
     end
     
     #モデルとモーションの読み込み
-    def load(model_name, motion_name)
+    def load(model_name, motion_name, vertex_shader, fragment_shader)
         load_model("./model/#{model_name}")
         load_motion("./motion/#{motion_name}")
-    end
-    
-    #シェーダの読み込み、コンパイル、Uniform変数へのリンク
-    def load_shader(vert_shader, frag_shader)
-        @program = create_program("./shader/#{vert_shader}", "./shader/#{frag_shader}")
         
-        @locations = Hash.new()
-        @locations[:is_edge] = GL.GetUniformLocation(@program, 'isEdge')
-        @locations[:alpha] = GL.GetUniformLocation(@program, 'alpha')
-        @locations[:ambient] = GL.GetUniformLocation(@program, 'ambient')
-        @locations[:sampler] = GL.GetUniformLocation(@program, 'sampler')
-        @locations[:toon_sampler] = GL.GetUniformLocation(@program, 'toonSampler')
-        @locations[:use_texture] = GL.GetUniformLocation(@program, 'useTexture')
-        @locations[:light_diffuse] = GL.GetUniformLocation(@program, 'lightDiffuse')
-        @locations[:light_dir] = GL.GetUniformLocation(@program, 'lightDir')
-        @locations[:shininess] = GL.GetUniformLocation(@program, 'shininess')
-        @locations[:specular_color] = GL.GetUniformLocation(@program, 'supecularColor')
-        @locations[:diffuse] = GL.GetUniformLocation(@program, 'diffuse')
-        @locations[:is_sphere_use] = GL.GetUniformLocation(@program, 'isSphereUse')
-        @locations[:is_sphere_add] = GL.GetUniformLocation(@program, 'isSphereAdd')
-        @locations[:sphere_sampler] = GL.GetUniformLocation(@program, 'sphereSampler')
-        
-        attribute(:bone_weight, 'boneWeight')
-        attribute(:vector_from_bone1, 'vectorFromBone1')
-        attribute(:vector_from_bone2, 'vectorFromBone2')
-        attribute(:bone1_rotation, 'bone1Rotation')
-        attribute(:bone2_rotation, 'bone2Rotation')
-        attribute(:bone1_position, 'bone1Position')
-        attribute(:bone2_position, 'bone2Position')
-        attribute(:normal, 'vertNormal')
-        attribute(:texcoord, 'texCoord')
-    end
-    
-    def attribute(label, name)
-        @locations[label] = GL.GetAttribLocation(@program, name)
-        GL.EnableVertexAttribArray(@locations[label])
-    end
-    
-    #シェーダをコンパイルして、リンクする
-    def create_program(vert_name, frag_name)
-        program = GL.CreateProgram()
-        
-        vert_shader = create_shader(vert_name, GL_VERTEX_SHADER)
-        frag_shader = create_shader(frag_name, GL_FRAGMENT_SHADER)
-        
-        GL.AttachShader(program, vert_shader)
-        GL.AttachShader(program, frag_shader)
-        GL.LinkProgram(program)
-        
-        if !GL.GetProgramiv(program, GL_LINK_STATUS)
-            raise(GL.GetProgramInfoLog(program))
-        end
-
-        GL.DeleteShader(vert_shader)
-        GL.DeleteShader(frag_shader)
-
-        return program
-    end
-
-    #シェーダのコンパイルする
-    def create_shader(file_name, type)
-        shader = GL.CreateShader(type)
-        
-        File.open(file_name, 'rb') { |file|
-            GL.ShaderSource(shader, file.read())
-            GL.CompileShader(shader)
-            
-            if !GL.GetShaderiv(shader, GL_COMPILE_STATUS)
-                raise(GL.GetShaderInfoLog(shader))
-            end
-        }
-        
-        return shader
+        @program, @locations = load_shader(vertex_shader, fragment_shader)
     end
     
     #OpenGL用のパラメータを設定
@@ -687,10 +408,9 @@ end
 
 object = Object3D.new()
 object.create_window(100, 100, 450, 450, 'MMD on Ruby')
+
 object.set_gl_parameter()
-
-object.load(model_file, motion_file)
-object.load_shader(shader_file[0], shader_file[1])
-
+object.load(model_file, motion_file, shader_file[0], shader_file[1])
 object.set_func()
+
 object.start()

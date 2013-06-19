@@ -41,8 +41,8 @@ module InitBuffers
     end
     
     def init_rotations(model, buffers)
-        @rotations1 = Array.new()
-        @rotations2 = Array.new()
+        @rotations1 = Array.new(model.vertices.length * 4)
+        @rotations2 = Array.new(model.vertices.length * 4)
 
         model.vertices.each_with_index do |vertex, i|
             3.times do |j|
@@ -59,8 +59,8 @@ module InitBuffers
     end
     
     def init_positions(model, buffers)
-        @positions1 = Array.new()
-        @positions2 = Array.new()
+        @positions1 = Array.new(model.vertices.length * 3)
+        @positions2 = Array.new(model.vertices.length * 3)
         
         model.vertices.each_with_index do |vertex, i|
             bone1 = model.bones[vertex.bone_nums[0]]
@@ -99,7 +99,7 @@ module InitBuffers
     def create_buffer(array)
         buffer = GL.GenBuffers(1)[0]
         GL.BindBuffer(GL::ARRAY_BUFFER, buffer)
-        GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_STATIC_DRAW)
+        GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_DYNAMIC_DRAW)
 
         return buffer
     end

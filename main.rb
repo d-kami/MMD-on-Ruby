@@ -27,6 +27,8 @@ class Object3D
     include Shader
     include LoadImage
     include InitBuffers
+    
+    @@ONE = [0.0, 0.0, 0.0, 1.0]
 
     #MMDのモデルファイルを読み込む
     def load_model(file_name)
@@ -102,18 +104,22 @@ class Object3D
         else
             parent = move_bone(bone.parent_index)
             
-            3.times do |i|
-                bone.apos[i] = bone.pos[i] - parent.pos[i] + bone.mpos[i]
-            end
-            
+            bone.apos[0] = bone.pos[0] - parent.pos[0] + bone.mpos[0]
+            bone.apos[1] = bone.pos[1] - parent.pos[1] + bone.mpos[1]
+            bone.apos[2] = bone.pos[2] - parent.pos[2] + bone.mpos[2]
+
             bone.apos.rotate_by_quat(parent.arot)
             
-            3.times do |i|
-                bone.apos[i] += parent.apos[i]
+            bone.apos[0] += parent.apos[0]
+            bone.apos[1] += parent.apos[1]
+            bone.apos[2] += parent.apos[2]
+
+            bone.arot.set_array(parent.arot)
+            
+            if (bone.mrot.values <=> @@ONE) != 0
+                bone.arot.mul(bone.mrot)
             end
             
-            bone.arot.set_array(parent.arot)
-            bone.arot.mul(bone.mrot)
             bone.visited = true
             
             return bone
@@ -162,7 +168,7 @@ class Object3D
         modify_buffer(@buffers[:bone2_rotation], @rotations2)
         
         endm = Time.now()
-        puts "#{endm - start} sec"
+        puts (endm - start).to_s() + "s"
     end
     
     def set_array3(dst, src, dst_index)

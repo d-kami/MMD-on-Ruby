@@ -44,32 +44,34 @@ class Quaternion
     
     #引数のクォータニオンもしくは配列の値をこのクォータニオンに格納する
     def set_array(other)
-        @@COUNT.times do |index|
-            @values[index] = other[index].to_f()
-        end
+        @values[@@X] = other[@@X]
+        @values[@@Y] = other[@@Y]
+        @values[@@Z] = other[@@Z]
+        @values[@@W] = other[@@W]
     end
     
     #このクォータニオンと引数の足し算を行い結果を格納する
     def add(other)
-        @@COUNT.times do |index|
-            @values[index] += other[index]
-        end
+        @values[@@X] += other[@@X]
+        @values[@@Y] += other[@@Y]
+        @values[@@Z] += other[@@Z]
+        @values[@@W] += other[@@W]
     end
     
     #このクォータニオンと引数のクォータニオンの掛け算を行い結果を格納する
     def mul(other)
         a = self
         b = other
-        r = Array.new()
         
-        r[@@X] = a[@@W] * b[@@X] + a[@@X] * b[@@W] + a[@@Y] * b[@@Z] - a[@@Z] * b[@@Y]
-        r[@@Y] = a[@@W] * b[@@Y] - a[@@X] * b[@@Z] + a[@@Y] * b[@@W] + a[@@Z] * b[@@X]
-        r[@@Z] = a[@@W] * b[@@Z] + a[@@X] * b[@@Y] - a[@@Y] * b[@@X] + a[@@Z] * b[@@W]
-        r[@@W] = a[@@W] * b[@@W] - a[@@X] * b[@@X] - a[@@Y] * b[@@Y] - a[@@Z] * b[@@Z]
-        
-        @@COUNT.times do |index|
-            @values[index] = r[index]
-        end
+        c = a[@@W] * b[@@X] + a[@@X] * b[@@W] + a[@@Y] * b[@@Z] - a[@@Z] * b[@@Y]
+        d = a[@@W] * b[@@Y] - a[@@X] * b[@@Z] + a[@@Y] * b[@@W] + a[@@Z] * b[@@X]
+        e = a[@@W] * b[@@Z] + a[@@X] * b[@@Y] - a[@@Y] * b[@@X] + a[@@Z] * b[@@W]
+        f = a[@@W] * b[@@W] - a[@@X] * b[@@X] - a[@@Y] * b[@@Y] - a[@@Z] * b[@@Z]
+
+        values[@@X] = c
+        values[@@Y] = d
+        values[@@Z] = e
+        values[@@W] = f
     end
     
     #このクォータニオンのwを計算する

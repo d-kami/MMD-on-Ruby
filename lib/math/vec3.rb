@@ -49,23 +49,23 @@ class Vector3
     
     #引数のベクトルもしくは配列の値をこのベクトルに格納する
     def set_array(other)
-        @@COUNT.times do |index|
-            @values[index] = other[index].to_f()
-        end
+        @values[0] = other[0]
+        @values[1] = other[1]
+        @values[2] = other[2]
     end
     
     #このベクトルと引数の足し算を行い結果を格納する
     def add(other)
-        @@COUNT.times do |index|
-            @values[index] += other[index]
-        end
+        @values[0] += other[0]
+        @values[1] += other[1]
+        @values[2] += other[2]
     end
     
     #このベクトルと引数の引き算を行い結果を格納する
     def sub(other)
-        @@COUNT.times do |index|
-            @values[index] -= other[index]
-        end
+        @values[0] -= other[0]
+        @values[1] -= other[1]
+        @values[2] -= other[2]
     end
     
     #このベクトルをval倍する
@@ -135,7 +135,7 @@ class Vector3
         self[Vector3.Z] = iz * qw + iw * -qz + ix * -qy - iy * -qx
     end
     
-    def Vector3.add()
+    def Vector3.add(vec1, vec2, dst)
         dst.set(vec1)
         dst.add(vec2)
         

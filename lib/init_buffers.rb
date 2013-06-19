@@ -41,39 +41,39 @@ module InitBuffers
     end
     
     def init_rotations(model, buffers)
-        rotations1 = Array.new()
-        rotations2 = Array.new()
+        @rotations1 = Array.new()
+        @rotations2 = Array.new()
 
         model.vertices.each_with_index do |vertex, i|
             3.times do |j|
-                rotations1[4 * i + j] = 0.0
-                rotations2[4 * i + j] = 0.0
+                @rotations1[4 * i + j] = 0.0
+                @rotations2[4 * i + j] = 0.0
             end
             
-            rotations1[4 * i + 3] = 1.0
-            rotations2[4 * i + 3] = 1.0
+            @rotations1[4 * i + 3] = 1.0
+            @rotations2[4 * i + 3] = 1.0
         end
         
-        buffers[:bone1_rotation] = create_buffer(rotations1)
-        buffers[:bone2_rotation] = create_buffer(rotations2)
+        buffers[:bone1_rotation] = create_buffer(@rotations1)
+        buffers[:bone2_rotation] = create_buffer(@rotations2)
     end
     
     def init_positions(model, buffers)
-        positions1 = Array.new()
-        positions2 = Array.new()
+        @positions1 = Array.new()
+        @positions2 = Array.new()
         
         model.vertices.each_with_index do |vertex, i|
             bone1 = model.bones[vertex.bone_nums[0]]
             bone2 = model.bones[vertex.bone_nums[1]]
             
             3.times do |j|
-                positions1[3 * i + j] = bone1.pos[j]
-                positions2[3 * i + j] = bone2.pos[j]
+                @positions1[3 * i + j] = bone1.pos[j]
+                @positions2[3 * i + j] = bone2.pos[j]
             end
         end
         
-        buffers[:bone1_position] = create_buffer(positions1)
-        buffers[:bone2_position] = create_buffer(positions2)
+        buffers[:bone1_position] = create_buffer(@positions1)
+        buffers[:bone2_position] = create_buffer(@positions2)
     end
     
     def init_indices(model, buffers)
@@ -102,5 +102,10 @@ module InitBuffers
         GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_STATIC_DRAW)
 
         return buffer
+    end
+    
+    def modify_buffer(buffer, array)
+        GL.BindBuffer(GL::ARRAY_BUFFER, buffer)
+        GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_STATIC_DRAW)
     end
 end

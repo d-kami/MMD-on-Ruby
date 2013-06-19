@@ -294,8 +294,6 @@ class MMDBone
     attr_reader :apos
     attr_reader :arot
     
-    attr_reader :spos
-    
     attr_accessor :visited
     
     def load(reader)
@@ -311,7 +309,6 @@ class MMDBone
         @mrot = Quaternion.new(0.0, 0.0, 0.0, 1.0)
         @apos = Vector3.new(0.0, 0.0, 0.0)
         @arot = Quaternion.new(0.0, 0.0, 0.0, 1.0)
-        @spos = Vector3.new(0.0, 0.0, 0.0)
         @visited = false
     end
 end

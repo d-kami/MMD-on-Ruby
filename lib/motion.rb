@@ -79,6 +79,10 @@ class MMDMotionData
         @location = reader.floats(3)
         @rotation = reader.floats(4)
         @interpolation = reader.bytes(64)
+        
+        @location[2] = -@location[2]
+        @rotation[0] = -@rotation[0]
+        @rotation[1] = -@rotation[1]
     end
 end
 

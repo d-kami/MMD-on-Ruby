@@ -114,11 +114,11 @@ class Vector3
         return result
     end
     
-    #引数のベクトルをクォータニオンを使って回転させる
-    def Vector3.rotateByQuat(vec, quat)
-        x = vec[Vector3.X]
-        y = vec[Vector3.Y]
-        z = vec[Vector3.Z]
+    #クォータニオンを使って回転させる
+    def rotate_by_quat(quat)
+        x = self[Vector3.X]
+        y = self[Vector3.Y]
+        z = self[Vector3.Z]
         
         qx = quat[Quaternion.X]
         qy = quat[Quaternion.Y]
@@ -129,13 +129,10 @@ class Vector3
         iy = qw * y + qz * x - qx * z
         iz = qw * z + qx * y - qy * x
         iw = -qx * x - qy * y - qz * z
-
-        result = Vector3.new()
-        result[Vector3.X] = ix * qw + iw * -qx + iy * -qz - iz * -qy
-        result[Vector3.Y] = iy * qw + iw * -qy + iz * -qx - ix * -qz
-        result[Vector3.Z] = iz * qw + iw * -qz + ix * -qy - iy * -qx
         
-        return result
+        self[Vector3.X] = ix * qw + iw * -qx + iy * -qz - iz * -qy
+        self[Vector3.Y] = iy * qw + iw * -qy + iz * -qx - ix * -qz
+        self[Vector3.Z] = iz * qw + iw * -qz + ix * -qy - iy * -qx
     end
     
     def Vector3.add()

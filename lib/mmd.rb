@@ -2,6 +2,8 @@
 
 require 'kconv'
 require './lib/mmdr.rb'
+require './lib/math/vec3.rb'
+require './lib/math/quat.rb'
 
 class MMDModel
     attr_reader :header
@@ -287,6 +289,15 @@ class MMDBone
     attr_reader :ik_parent
     attr_reader :pos
     
+    attr_reader :mpos
+    attr_reader :mrot
+    attr_reader :apos
+    attr_reader :arot
+    
+    attr_reader :spos
+    
+    attr_accessor :visited
+    
     def load(reader)
         @name = reader.string(20)
         @parent_index = reader.short()
@@ -294,8 +305,14 @@ class MMDBone
         @type = reader.byte()
         @ik_parent = reader.short()
         @pos = reader.floats(3)
-        
         @pos[2] = -@pos[2]
+        
+        @mpos = Vector3.new(0.0, 0.0, 0.0)
+        @mrot = Quaternion.new(0.0, 0.0, 0.0, 1.0)
+        @apos = Vector3.new(0.0, 0.0, 0.0)
+        @arot = Quaternion.new(0.0, 0.0, 0.0, 1.0)
+        @spos = Vector3.new(0.0, 0.0, 0.0)
+        @visited = false
     end
 end
 

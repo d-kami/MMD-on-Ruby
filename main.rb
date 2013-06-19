@@ -2,11 +2,17 @@
 
 require 'opengl'
 require 'glut'
+
+require 'ostruct'
+
 require './lib/mmd.rb'
 require './lib/motion.rb'
 require './lib/shader.rb'
 require './lib/load_image.rb'
 require './lib/init_buffers.rb'
+
+require './lib/math/vec3.rb'
+require './lib/math/quat.rb'
 
 #読み込むモデルファイルのファイル名
 model_file = 'mikumetal.pmd'
@@ -41,18 +47,28 @@ class Object3D
             @toons = create_toons(@model)
             load_toons(@toons, @textures)
             
+            set_bones()
+            
             #表情を連想配列で管理するように設定する
             set_skins()
         }
+    end
+    
+    def set_bones()
+        @bone_map = Hash.new()
+        
+        @model.bones.each do |bone|
+            @bone_map[bone.name] = bone
+        end
     end
     
     #表情を連想配列で管理するように設定する
     def set_skins()
         @skin_map = Hash.new()
     
-        @model.skins.each{|skin|
+        @model.skins.each do |skin|
             @skin_map[skin.name] = skin
-        }
+        end
     end
     
     #MMDのモーションファイル(VMD)を読み込む
@@ -61,6 +77,7 @@ class Object3D
             @motion = MMDMotion.new()
             @motion.load(file)
             
+            @bone_index = 0
             @skin_index = 0
             @frame = 0
         }
@@ -72,34 +89,102 @@ class Object3D
         @light_dir = [0.5, 1.0, 0.5]
     end
     
-    def move_bones(bones)
-        indivisualBoneMotions = Array.new()
-        boneMotions = Array.new()
-
-        @model.bones.each_with_index do |bone, index|
+    def move_bone(index)
+        bone = @model.bones[index]
+        
+        if bone.visited == true
+            return bone.pos, bone.apos, bone.spos, bone.arot
+        end
+        
+        if bone.parent_index == -1
+            return bone.pos, bone.apos, bone.mpos, bone.mrot
+        else
+            parent_pos, parent_apos, parent_spos, parent_rot = move_bone(bone.parent_index)
+            
+            3.times do |i|
+                bone.apos[i] = bone.pos[i] - parent_pos[i] + bone.mpos[i]
+            end
+            
+            bone.apos.rotate_by_quat(parent_rot)
+            
+            3.times do |i|
+                bone.apos[i] += parent_apos[i]
+            end
+            
+            bone.arot.set_array(parent_rot)
+            bone.arot.mul(bone.mrot)
+            bone.visited = true
+            
+            return bone.pos, bone.apos, bone.spos, bone.arot
         end
     end
     
-    def resolve_iks(model)
-        target = Vector3.new()
-        ikbone = Vector3.new()
-        axis = Vector3.new()
-        
-        tmpQ = Quaternion.new()
-        tmpR = Quaternion.new()
-        
-        model.iks.each do |ik|
-            maxangle = ik.weight * 4
+    def bone_motions()
+        while @bone_index < @motion.motions.length && @motion.motions[@bone_index].flame_no == @frame
+            #@frameと一致しているflame_noを持つモーションを全て設定する
+            bone_motion()
+
+            @bone_index += 1
         end
+        
+        @model.bones.each do |bone|
+            3.times do |i|
+                bone.apos[i] = 0.0
+                bone.spos[i] = 0.0
+            end
+            
+            bone.arot.set(0.0, 0.0, 0.0, 1.0)
+            bone.visited = false
+        end
+        
+        @model.bones.length.times do |i|
+            move_bone(i)
+        end
+        
+        positions1 = Array.new()
+        positions2 = Array.new()
+        rotations1 = Array.new()
+        rotations2 = Array.new()
+        
+        @model.vertices.each_with_index do |vertex, i|
+            bone1 = @model.bones[vertex.bone_nums[0]]
+            bone2 = @model.bones[vertex.bone_nums[1]]
+            
+            3.times do |j|
+                positions1[3 * i + j] = bone1.apos[j]
+                positions2[3 * i + j] = bone2.apos[j]
+            end
+            
+            4.times do |j|
+                rotations1[4 * i + j] = bone1.arot[j]
+                rotations2[4 * i + j] = bone2.arot[j]
+            end
+        end
+        
+        @buffers[:bone1_position] = create_buffer(positions1)
+        @buffers[:bone2_position] = create_buffer(positions2)
+        
+        @buffers[:bone1_rotation] = create_buffer(rotations1)
+        @buffers[:bone2_rotation] = create_buffer(rotations2)
     end
+    
+    def bone_motion()
+        motion = @motion.motions[@bone_index]
+    
+        #モデルに登録されてないボーンは無視する
+        if !@bone_map.key?(motion.bone_name)
+            return
+        end
 
-    #描画領域のサイズの変更
-    def reshape(w,h)
-        GL.Viewport(0, 0, w, h)
-
-        GL.MatrixMode(GL::GL_PROJECTION)
-        GL.LoadIdentity()
-        GLU.Perspective(45.0, w.to_f() / h.to_f(), 0.1, 100.0)
+        bone = @bone_map[motion.bone_name]
+        
+        3.times do |i|
+            bone.mpos[i] = motion.location[i]
+        end
+        
+        4.times do |i|
+            bone.mrot[i] = motion.rotation[i]
+        end
     end
     
     #表情の変更を行う
@@ -142,6 +227,7 @@ class Object3D
 
     #モデル情報の更新を行う
     def update_motion()
+        bone_motions()
         skin_motions()
     end
 
@@ -399,6 +485,15 @@ class Object3D
         GLUT.MouseFunc(method(:mouse).to_proc())
         GLUT.MotionFunc(method(:motion).to_proc())
         GLUT.TimerFunc(33 , method(:update).to_proc(), 0)
+    end
+    
+    #描画領域のサイズの変更
+    def reshape(w,h)
+        GL.Viewport(0, 0, w, h)
+
+        GL.MatrixMode(GL::GL_PROJECTION)
+        GL.LoadIdentity()
+        GLU.Perspective(45.0, w.to_f() / h.to_f(), 0.1, 100.0)
     end
 
     def start()

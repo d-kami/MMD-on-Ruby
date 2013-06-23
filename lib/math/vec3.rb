@@ -135,6 +135,12 @@ class Vector3
         self[Vector3.Z] = iz * qw + iw * -qz + ix * -qy - iy * -qx
     end
     
+    def lerp3(other, lerp)
+        self[0] = self[0] + lerp[0] * (other[0] - self[0])
+        self[1] = self[1] + lerp[1] * (other[1] - self[1])
+        self[2] = self[2] + lerp[2] * (other[2] - self[2])
+    end
+    
     def Vector3.add(vec1, vec2, dst)
         dst.set(vec1)
         dst.add(vec2)

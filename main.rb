@@ -79,10 +79,38 @@ class Object3D
             @motion = MMDMotion.new()
             @motion.load(file)
             
+            add_motions(@motion.motions)
+            
             @bone_index = 0
             @skin_index = 0
             @frame = 0
         }
+    end
+    
+    #motion_mapを作成しmotionsの要素を追加していく
+    def add_motions(motions)
+        @motion_map = Hash.new()
+    
+        motions.each do |motion|
+            add_motion(@motion_map, motion)
+        end
+        
+        @motion_map.each do |key, value|
+            value.sort! do |a, b|
+                a.flame_no <=> b.flame_no
+            end
+        end
+    end
+    
+    #motion_mapにmotionを追加する
+    def add_motion(motion_map, motion)
+        name = motion.bone_name
+    
+        if !@motion_map.key?(name)
+            motion_map[name] = Array.new()
+        end
+        
+        motion_map[name].push(motion)
     end
     
     #光源の色と方向設定
@@ -128,20 +156,24 @@ class Object3D
     
     def bone_motions()
         start = Time.now()
-    
-        while @bone_index < @motion.motions.length && @motion.motions[@bone_index].flame_no == @frame
-            #@frameと一致しているflame_noを持つモーションを全て設定する
-            bone_motion()
 
-            @bone_index += 1
+        @motion_map.each do |name, motions|
+            bone_motion(name, motions, @frame)
         end
         
+#        while @bone_index < @motion.motions.length && @motion.motions[@bone_index].flame_no == @frame
+#            #@frameと一致しているflame_noを持つモーションを全て設定する
+#            bone_motion()
+#
+#            @bone_index += 1
+#        end
+
         @model.bones.each do |bone|
             bone.apos.set(0.0, 0.0, 0.0)
             bone.arot.set(0.0, 0.0, 0.0, 1.0)
             bone.visited = false
         end
-        
+
         @model.bones.length.times do |i|
             move_bone(i)
         end
@@ -151,14 +183,24 @@ class Object3D
             bone2 = @model.bones[vertex.bone_nums[1]]
             
             p_index = i * 3
+
+            if !equals3(@positions1, bone1.apos, p_index)
+                set_array3(@positions1, bone1.apos, p_index)
+            end
             
-            set_array3(@positions1, bone1.apos, p_index)
-            set_array3(@positions2, bone2.apos, p_index)
+            if !equals3(@positions2, bone2.apos, p_index)
+                set_array3(@positions2, bone2.apos, p_index)
+            end
             
             r_index = i * 4
             
-            set_array4(@rotations1, bone1.arot, r_index)
-            set_array4(@rotations2, bone2.arot, r_index)
+            if !equals4(@rotations1, bone1.arot, r_index)
+                set_array4(@rotations1, bone1.arot, r_index)
+            end
+            
+            if !equals4(@rotations2, bone2.arot, r_index)
+                set_array4(@rotations2, bone2.arot, r_index)
+            end
         end
         
         modify_buffer(@buffers[:bone1_position], @positions1)
@@ -166,9 +208,17 @@ class Object3D
         
         modify_buffer(@buffers[:bone1_rotation], @rotations1)
         modify_buffer(@buffers[:bone2_rotation], @rotations2)
-        
+
         endm = Time.now()
-        puts (endm - start).to_s() + "s"
+        #puts (endm - start).to_s() + "s"
+    end
+    
+    def equals3(dst, src, dst_index)
+        return dst[dst_index] == src[0] && dst[dst_index + 1] == src[1] && dst[dst_index + 2] == src[2]
+    end
+    
+    def equals4(dst, src, dst_index)
+        return dst[dst_index] == src[0] && dst[dst_index + 1] == src[1] && dst[dst_index + 2] == src[2] && dst[dst_index + 3] == src[3]
     end
     
     def set_array3(dst, src, dst_index)
@@ -184,18 +234,97 @@ class Object3D
         dst[dst_index + 3] = src[3]
     end
     
-    def bone_motion()
-        motion = @motion.motions[@bone_index]
-
+    def bone_motion(name, motions, frame)
         #モデルに登録されてないボーンは無視する
-        if !@bone_map.key?(motion.bone_name)
+        if !@bone_map.key?(motions[0].bone_name)
             return
+        end
+        
+        index = bsearch(motions, frame)
+        motion = motions[index]
+        
+        if index + 1 < motions.length
+            nextm = motions[index + 1]
+        else
+            nextm = motion
         end
 
         bone = @bone_map[motion.bone_name]
-
+        
+        if(motion.flame_no == nextm.flame_no)
+            per = 1.0;
+        else
+            if(frame >= motion.flame_no)
+                per = (frame - motion.flame_no).to_f() / (nextm.flame_no - motion.flame_no)
+            else
+                per = 1.0
+            end
+        end
+        
+        if per > 1.0
+            per = 1.0
+        end
+        
         bone.mpos.set_array(motion.location)
+        lerp3 = [bezie(nextm, 0, per), bezie(nextm, 1, per), bezie(nextm, 2, per)]
+        bone.mpos.lerp3(nextm.location, lerp3)
+        
         bone.mrot.set_array(motion.rotation)
+        bone.mrot.slerp(nextm.rotation, bezie(nextm, 3, per))
+    end
+    
+    def bsearch(motions, frame)
+        low = 0
+        high = motions.size - 1
+
+        while low <= high
+            mid = (low + high) / 2
+
+            if frame == motions[mid].flame_no
+                return mid
+            elsif frame > motions[mid].flame_no
+                low = mid + 1
+            else
+                high = mid - 1
+            end
+        end
+        
+        if mid == 0
+            return 0
+        end
+
+        return mid - 1
+    end
+    
+    def bezie(next_motion, i, per)
+        x1 = next_motion.interpolation[i * 4]
+        x2 = next_motion.interpolation[i * 4 + 1]
+        y1 = next_motion.interpolation[i * 4 + 2]
+        y2 = next_motion.interpolation[i * 4 + 3]
+        
+        return bezierp(x1.to_f() / 127, x2.to_f() / 127, y1.to_f() / 127, y2.to_f() / 127, per);
+    end
+    
+    def bezierp(x1, x2, y1, y2, x)
+        t = x
+
+        while true
+            v = ipfunc(t, x1, x2) - x
+            break if v * v < 0.0000001
+            tt = ipfuncd(t, x1, x2)
+            break if tt == 0
+            t -= v / tt
+        end
+        
+        return ipfunc(t, y1, y2)
+    end
+    
+    def ipfunc(t, p1, p2)
+        return ((1.0 + 3.0 * p1 - 3.0 * p2) * t * t * t + (3.0 * p2 - 6.0 * p1) * t * t + 3.0 * p1 * t)
+    end
+    
+    def ipfuncd(t, p1, p2)
+        return ((3.0 + 9.0 * p1 - 9.0 * p2) * t * t + (6.0 * p2 - 12.0 * p1) * t + 3.0 * p1)
     end
     
     #表情の変更を行う
@@ -444,7 +573,7 @@ class Object3D
 
     #1フレームごとに呼び出されるメソッド
     def update(value)
-        GLUT.TimerFunc(33 , method(:update).to_proc(), 0)
+        GLUT.TimerFunc(33, method(:update).to_proc(), 0)
         
         update_motion()
         

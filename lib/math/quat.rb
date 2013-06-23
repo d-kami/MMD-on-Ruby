@@ -116,8 +116,40 @@ class Quaternion
         return Quaternion.new(-quat[@@X] / n, -quat[@@Y] / n, -quat[@@Z] / n, quat[@@W] / n)
     end
     
+    def slerp(other, value)
+        cosHalfTheta = self[0] * other[0] + self[1] * other[1] + self[2] * other[2] + self[3] * other[3]
+        
+        if cosHalfTheta.abs() >= 1.0
+            return
+        end
+        
+        halfTheta = Math.acos(cosHalfTheta)
+        sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta * cosHalfTheta)
+        
+        if sinHalfTheta.abs() < 0.001
+            self[0] = (self[0] * 0.5 + other[0] * 0.5)
+            self[1] = (self[1] * 0.5 + other[1] * 0.5)
+            self[2] = (self[2] * 0.5 + other[2] * 0.5)
+            self[3] = (self[3] * 0.5 + other[3] * 0.5)
+            return
+        end
+        
+        
+        ratioA = Math.sin((1 - value) * halfTheta) / sinHalfTheta
+        ratioB = Math.sin(value * halfTheta) / sinHalfTheta
+
+        self[0] = (self[0] * ratioA + other[0] * ratioB)
+        self[1] = (self[1] * ratioA + other[1] * ratioB)
+        self[2] = (self[2] * ratioA + other[2] * ratioB)
+        self[3] = (self[3] * ratioA + other[3] * ratioB)
+    end
+    
     #引数のクォータニオンの共役クォータニオンを返す
     def Quaternion.conj(quat)
         return Quaternion.new(-quat[@@X], -quat[@@Y], -quat[@@Z], quat[@@W])
+    end
+    
+    def Quaternion.dot(quat1, quat2)
+        return quat1[0] * quat2[0] + quat1[1] * quat2[1] + quat1[2] * quat2[2] + quat1[3] * quat2[3]
     end
 end

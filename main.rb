@@ -160,13 +160,6 @@ class Object3D
         @motion_map.each do |name, motions|
             bone_motion(name, motions, @frame)
         end
-        
-#        while @bone_index < @motion.motions.length && @motion.motions[@bone_index].flame_no == @frame
-#            #@frameと一致しているflame_noを持つモーションを全て設定する
-#            bone_motion()
-#
-#            @bone_index += 1
-#        end
 
         @model.bones.each do |bone|
             bone.apos.set(0.0, 0.0, 0.0)
@@ -236,7 +229,7 @@ class Object3D
     
     def bone_motion(name, motions, frame)
         #モデルに登録されてないボーンは無視する
-        if !@bone_map.key?(motions[0].bone_name)
+        if !@bone_map.key?(name)
             return
         end
         
@@ -261,14 +254,10 @@ class Object3D
             end
         end
         
-        if per > 1.0
-            per = 1.0
-        end
-        
         bone.mpos.set_array(motion.location)
         lerp3 = [bezie(nextm, 0, per), bezie(nextm, 1, per), bezie(nextm, 2, per)]
         bone.mpos.lerp3(nextm.location, lerp3)
-        
+
         bone.mrot.set_array(motion.rotation)
         bone.mrot.slerp(nextm.rotation, bezie(nextm, 3, per))
     end
@@ -293,6 +282,10 @@ class Object3D
             return 0
         end
 
+        if frame >= motions[mid].flame_no
+            return mid
+        end
+        
         return mid - 1
     end
     

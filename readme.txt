@@ -11,11 +11,21 @@ modelフォルダに入れ、toonで始まるファイルはtoonフォルダに�
 実行に必要な物
 Ruby
 1.9.3で動作確認しました。
+1.9以降が必要です
 
 ruby-opengl
 gemでインストールしましょう。
 gem install ruby-opengl
 でインストールできます。
+
+narray
+gemでインストールできます
+gem install narray
+
+ただしWindowsではDEVELOPMENT KIT
+が必要になります。インストールには
+http://blog.livedoor.jp/gaziya/archives/53605012.html
+が参考になります。後日記あたりを参考にしましょう。
 
 bmp.rb (このrepositoryに含まれています)
 配布元

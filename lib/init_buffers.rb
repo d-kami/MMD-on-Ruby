@@ -100,12 +100,12 @@ module InitBuffers
         buffer = GL.GenBuffers(1)[0]
         GL.BindBuffer(GL::ARRAY_BUFFER, buffer)
         GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_DYNAMIC_DRAW)
-
+        
         return buffer
     end
     
     def modify_buffer(buffer, array)
         GL.BindBuffer(GL::ARRAY_BUFFER, buffer)
-        GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_STATIC_DRAW)
+        GL.BufferData(GL::ARRAY_BUFFER, array.size, array, GL_STATIC_DRAW)
     end
 end

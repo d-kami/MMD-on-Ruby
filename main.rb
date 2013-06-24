@@ -3,7 +3,7 @@
 require 'opengl'
 require 'glut'
 
-require 'ostruct'
+require 'narray'
 
 require './lib/mmd.rb'
 require './lib/motion.rb'
@@ -171,30 +171,15 @@ class Object3D
             move_bone(i)
         end
         
-        @model.vertices.each_with_index do |vertex, i|
-            bone1 = @model.bones[vertex.bone_nums[0]]
-            bone2 = @model.bones[vertex.bone_nums[1]]
-            
-            p_index = i * 3
-
-            if !equals3(@positions1, bone1.apos, p_index)
-                set_array3(@positions1, bone1.apos, p_index)
-            end
-            
-            if !equals3(@positions2, bone2.apos, p_index)
-                set_array3(@positions2, bone2.apos, p_index)
-            end
-            
-            r_index = i * 4
-            
-            if !equals4(@rotations1, bone1.arot, r_index)
-                set_array4(@rotations1, bone1.arot, r_index)
-            end
-            
-            if !equals4(@rotations2, bone2.arot, r_index)
-                set_array4(@rotations2, bone2.arot, r_index)
-            end
-        end
+        bpos = NArray.to_na(@model.bones.map{|b| b.apos.values}).flatten().to_type(NArray::SFLOAT)
+        brot = NArray.to_na(@model.bones.map{|b| b.arot.values}).flatten().to_type(NArray::SFLOAT)
+        bnum1 = NArray.to_na(@model.vertices.map{|v| v.bone_nums[0]}).flatten
+        bnum2 = NArray.to_na(@model.vertices.map{|v| v.bone_nums[1]}).flatten
+        
+        @positions1 = bpos[NArray.refer(bnum1 * NVector[3, 3, 3] + NVector[0, 1, 2]).flatten()].to_s()
+        @positions2 = bpos[NArray.refer(bnum2 * NVector[3, 3, 3] + NVector[0, 1, 2]).flatten()].to_s()
+        @rotations1 = brot[NArray.refer(bnum1 * NVector[4, 4, 4, 4] + NVector[0, 1, 2, 3]).flatten()].to_s()
+        @rotations2 = brot[NArray.refer(bnum2 * NVector[4, 4, 4, 4] + NVector[0, 1, 2, 3]).flatten()].to_s()
         
         modify_buffer(@buffers[:bone1_position], @positions1)
         modify_buffer(@buffers[:bone2_position], @positions2)
@@ -203,7 +188,7 @@ class Object3D
         modify_buffer(@buffers[:bone2_rotation], @rotations2)
 
         endm = Time.now()
-        #puts (endm - start).to_s() + "s"
+        puts (endm - start).to_s() + "s"
     end
     
     def equals3(dst, src, dst_index)

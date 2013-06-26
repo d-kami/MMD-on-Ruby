@@ -45,6 +45,8 @@ class Vector3
         @values[@@X] = x.to_f()
         @values[@@Y] = y.to_f()
         @values[@@Z] = z.to_f()
+        
+        return self
     end
     
     #引数のベクトルもしくは配列の値をこのベクトルに格納する
@@ -52,6 +54,8 @@ class Vector3
         @values[0] = other[0]
         @values[1] = other[1]
         @values[2] = other[2]
+        
+        return self
     end
     
     #このベクトルと引数の足し算を行い結果を格納する
@@ -59,6 +63,8 @@ class Vector3
         @values[0] += other[0]
         @values[1] += other[1]
         @values[2] += other[2]
+        
+        return self
     end
     
     #このベクトルと引数の引き算を行い結果を格納する
@@ -66,6 +72,8 @@ class Vector3
         @values[0] -= other[0]
         @values[1] -= other[1]
         @values[2] -= other[2]
+        
+        return self
     end
     
     #このベクトルをval倍する

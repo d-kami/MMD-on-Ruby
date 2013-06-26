@@ -50,6 +50,12 @@ class Quaternion
         @values[@@W] = other[@@W]
     end
     
+    def set_vector3(other)
+        3.times do |i|
+            @values[i] = other[i]
+        end
+    end
+    
     #このクォータニオンと引数の足し算を行い結果を格納する
     def add(other)
         @values[@@X] += other[@@X]
@@ -72,6 +78,8 @@ class Quaternion
         values[@@Y] = d
         values[@@Z] = e
         values[@@W] = f
+        
+        return self
     end
     
     #このクォータニオンのwを計算する
@@ -114,6 +122,15 @@ class Quaternion
         n = quat.norm2()
         
         return Quaternion.new(-quat[@@X] / n, -quat[@@Y] / n, -quat[@@Z] / n, quat[@@W] / n)
+    end
+    
+    def normalize()
+        length = norm()
+        
+        self[@@X] /= length
+        self[@@Y] /= length
+        self[@@Z] /= length
+        self[@@W] /= length
     end
     
     def slerp(other, value)

@@ -119,6 +119,70 @@ class Object3D
         @light_dir = [0.5, 1.0, 0.5]
     end
     
+    def resolve_iks()
+        target_vec = Vector3.new()
+        ikbone_vec = Vector3.new()
+        axis = Vector3.new()
+        tmp_q = Quaternion.new()
+        tmp_r = Quaternion.new()
+        
+        @model.iks.each do |ik|
+            ikbone_pos = move_bone(ik.bone_index).apos
+            target_index = ik.target_index
+            axis.set_array(@model.bones[target_index].pos).sub(@model.bones[@model.bones[target_index].parent_index].pos)
+            min_length = 0.1 * axis.norm()
+            
+            ik.iterations.times do |n|
+                target_pos = move_bone(target_index).apos
+                
+                if min_length > axis.set_array(target_pos).sub(ikbone_pos).norm()
+                    break
+                end
+
+                ik.children.each_with_index do |bone_index, i|
+                    motion = move_bone(bone_index)
+                    bone_pos = motion.apos
+                    target_pos = move_bone(target_index).apos if i > 0
+
+                    target_vec.set_array(target_pos).sub(bone_pos)
+                    target_vec_len = target_vec.norm()
+                    next if target_vec_len < min_length
+
+                    ikbone_vec.set_array(ikbone_pos).sub(bone_pos)
+                    ikbone_vec_len = ikbone_vec.norm()
+                    next if ikbone_vec_len < min_length
+                    
+                    axis = Vector3.cross(target_vec, ikbone_vec)
+                    axis_len = axis.norm()
+                    sin_theta = axis_len / ikbone_vec_len / target_vec_len
+                    next if sin_theta < 0.001
+                    
+                    max_angle = (i + 1) * ik.weight * 4
+                    theta = Math.asin(sin_theta)
+                    theta = 3.141592653589793 - theta if Vector3.dot(target_vec, ikbone_vec) < 0
+                    theta = max_angle if theta > max_angle
+                    
+                    tmp_q.set_vector3(axis.scale(Math.sin(theta / 2) / axis_len))
+                    tmp_q[3] = Math.cos(theta / 2)
+                    
+                    parent_rotation = move_bone(@model.bones[bone_index].parent_index).arot
+                    r = Quaternion.inverse(parent_rotation)
+                    r.mul(tmp_q).mul(motion.arot)
+
+                    r.normalize()
+                    @model.bones[bone_index].mrot.set_array(r)
+                    motion.arot.mul(tmp_q)
+                    
+                    i.times do |j|
+                        @model.bones[j].visited = false
+                    end
+                    
+                    @model.bones[ik.target_index].visited = false
+                end
+            end
+        end
+    end
+    
     def move_bone(index)
         bone = @model.bones[index]
 
@@ -127,6 +191,8 @@ class Object3D
         end
 
         if bone.parent_index == -1
+            bone.apos.set_array(bone.pos)
+            bone.apos.add(bone.mpos)
             bone.arot.set_array(bone.mrot)
             return bone
         else
@@ -166,6 +232,8 @@ class Object3D
             bone.arot.set(0.0, 0.0, 0.0, 1.0)
             bone.visited = false
         end
+        
+        #resolve_iks()
 
         @model.bones.length.times do |i|
             move_bone(i)
@@ -189,27 +257,6 @@ class Object3D
 
         endm = Time.now()
         puts (endm - start).to_s() + "s"
-    end
-    
-    def equals3(dst, src, dst_index)
-        return dst[dst_index] == src[0] && dst[dst_index + 1] == src[1] && dst[dst_index + 2] == src[2]
-    end
-    
-    def equals4(dst, src, dst_index)
-        return dst[dst_index] == src[0] && dst[dst_index + 1] == src[1] && dst[dst_index + 2] == src[2] && dst[dst_index + 3] == src[3]
-    end
-    
-    def set_array3(dst, src, dst_index)
-        dst[dst_index + 0] = src[0]
-        dst[dst_index + 1] = src[1]
-        dst[dst_index + 2] = src[2]
-    end
-    
-    def set_array4(dst, src, dst_index)
-        dst[dst_index + 0] = src[0]
-        dst[dst_index + 1] = src[1]
-        dst[dst_index + 2] = src[2]
-        dst[dst_index + 3] = src[3]
     end
     
     def bone_motion(name, motions, frame)
@@ -243,8 +290,13 @@ class Object3D
         lerp3 = [bezie(nextm, 0, per), bezie(nextm, 1, per), bezie(nextm, 2, per)]
         bone.mpos.lerp3(nextm.location, lerp3)
 
-        bone.mrot.set_array(motion.rotation)
-        bone.mrot.slerp(nextm.rotation, bezie(nextm, 3, per))
+        if Quaternion.dot(motion.rotation, nextm.rotation) >= 0
+            bone.mrot.set_array(motion.rotation)
+            bone.mrot.slerp(nextm.rotation, bezie(nextm, 3, per))
+        else
+            bone.mrot.set(-motion.rotation[0], -motion.rotation[1], -motion.rotation[2], -motion.rotation[3])
+            bone.mrot.slerp(nextm.rotation, bezie(nextm, 3, per))
+        end
     end
     
     def bsearch(motions, frame)

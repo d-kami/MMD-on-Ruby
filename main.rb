@@ -124,7 +124,6 @@ class Object3D
         ikbone_vec = Vector3.new()
         axis = Vector3.new()
         tmp_q = Quaternion.new()
-        tmp_r = Quaternion.new()
         
         @model.iks.each do |ik|
             ikbone_pos = move_bone(ik.bone_index).apos
@@ -146,35 +145,57 @@ class Object3D
 
                     target_vec.set_array(target_pos).sub(bone_pos)
                     target_vec_len = target_vec.norm()
+
                     next if target_vec_len < min_length
 
                     ikbone_vec.set_array(ikbone_pos).sub(bone_pos)
                     ikbone_vec_len = ikbone_vec.norm()
+
                     next if ikbone_vec_len < min_length
                     
                     axis = Vector3.cross(target_vec, ikbone_vec)
                     axis_len = axis.norm()
                     sin_theta = axis_len / ikbone_vec_len / target_vec_len
+                    
                     next if sin_theta < 0.001
                     
-                    max_angle = (i + 1) * ik.weight * 4
+                    max_angle = (i + 1).to_f() * ik.weight * 4.0
+                    
                     theta = Math.asin(sin_theta)
                     theta = 3.141592653589793 - theta if Vector3.dot(target_vec, ikbone_vec) < 0
                     theta = max_angle if theta > max_angle
                     
-                    tmp_q.set_vector3(axis.scale(Math.sin(theta / 2) / axis_len))
-                    tmp_q[3] = Math.cos(theta / 2)
+                    tmp_q.set_vector3(axis.scale(Math::sin(theta / 2) / axis_len))
+                    tmp_q[3] = Math::cos(theta / 2)
                     
                     parent_rotation = move_bone(@model.bones[bone_index].parent_index).arot
-                    r = Quaternion.inverse(parent_rotation)
-                    r.mul(tmp_q).mul(motion.arot)
+                    r = Quaternion.conj(parent_rotation)
+                    r.mul(tmp_q)
+                    r.mul(motion.arot)
+
+                    if @model.bones[bone_index].name.index('ひざ')
+                        c = r[3]
+                        
+                        r.set(Math::sqrt(1 - c * c), 0, 0, c)
+                        
+                        tmp_q = Quaternion.conj(@model.bones[bone_index].arot)
+                        tmp = Quaternion.new()
+                        tmp.set_array(r)
+                        tmp.mul(tmp_q)
+                        tmp_q.set_array(tmp)
+                        tmp.set_array(parent_rotation)
+                        tmp.mul(tmp_q);
+                        tmp_q.set_array(tmp)
+                    end
 
                     r.normalize()
                     @model.bones[bone_index].mrot.set_array(r)
-                    motion.arot.mul(tmp_q)
+                    
+                    tmp_q.mul(@model.bones[bone_index].arot)
+                    @model.bones[bone_index].arot.set_array(tmp_q)
                     
                     i.times do |j|
-                        @model.bones[j].visited = false
+                        @model.bones[ik.children[j]].visited = false
                     end
                     
                     @model.bones[ik.target_index].visited = false
@@ -194,6 +215,7 @@ class Object3D
             bone.apos.set_array(bone.pos)
             bone.apos.add(bone.mpos)
             bone.arot.set_array(bone.mrot)
+            bone.visited = true
             return bone
         else
             parent = move_bone(bone.parent_index)
@@ -222,7 +244,7 @@ class Object3D
     
     def bone_motions()
         start = Time.now()
-
+        
         @motion_map.each do |name, motions|
             bone_motion(name, motions, @frame)
         end
@@ -230,10 +252,11 @@ class Object3D
         @model.bones.each do |bone|
             bone.apos.set(0.0, 0.0, 0.0)
             bone.arot.set(0.0, 0.0, 0.0, 1.0)
+            
             bone.visited = false
         end
         
-        #resolve_iks()
+        resolve_iks()
 
         @model.bones.length.times do |i|
             move_bone(i)
@@ -256,7 +279,7 @@ class Object3D
         modify_buffer(@buffers[:bone2_rotation], @rotations2)
 
         endm = Time.now()
-        puts (endm - start).to_s() + "s"
+        #puts (endm - start).to_s() + "s"
     end
     
     def bone_motion(name, motions, frame)
@@ -663,7 +686,7 @@ class Object3D
 
         GL.MatrixMode(GL::GL_PROJECTION)
         GL.LoadIdentity()
-        GLU.Perspective(45.0, w.to_f() / h.to_f(), 0.1, 100.0)
+        GLU.Perspective(60.0, w.to_f() / h.to_f(), 0.1, 100.0)
     end
 
     def start()

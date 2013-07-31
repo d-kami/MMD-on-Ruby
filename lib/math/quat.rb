@@ -40,6 +40,8 @@ class Quaternion
         @values[@@Y] = y.to_f()
         @values[@@Z] = z.to_f()
         @values[@@W] = w.to_f()
+        
+        return self
     end
     
     #引数のクォータニオンもしくは配列の値をこのクォータニオンに格納する
@@ -48,12 +50,16 @@ class Quaternion
         @values[@@Y] = other[@@Y]
         @values[@@Z] = other[@@Z]
         @values[@@W] = other[@@W]
+        
+        return self
     end
     
     def set_vector3(other)
         3.times do |i|
             @values[i] = other[i]
         end
+        
+        return self
     end
     
     #このクォータニオンと引数の足し算を行い結果を格納する
@@ -62,6 +68,8 @@ class Quaternion
         @values[@@Y] += other[@@Y]
         @values[@@Z] += other[@@Z]
         @values[@@W] += other[@@W]
+        
+        return self
     end
     
     #このクォータニオンと引数のクォータニオンの掛け算を行い結果を格納する

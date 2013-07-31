@@ -81,6 +81,8 @@ class Vector3
         @@COUNT.times do |index|
             @values[index] *= val
         end
+        
+        return self
     end
     
     #このベクトルのノルムの二乗を返す

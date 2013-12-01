@@ -25,6 +25,7 @@ module InitBuffers
     def init_vectors(model, buffers)
         vectors1 = Array.new()
         vectors2 = Array.new()
+        @skin_array = Array.new();
         
         model.vertices.each_with_index do |vertex, i|
             bone1 = model.bones[vertex.bone_nums[0]]
@@ -33,11 +34,13 @@ module InitBuffers
             3.times do |j|
                 vectors1[3 * i + j] = vertex.pos[j] - bone1.pos[j]
                 vectors2[3 * i + j] = vertex.pos[j] - bone2.pos[j]
+                @skin_array[3 * i + j] = 0.0;
             end
         end
         
         buffers[:vector_from_bone1] = create_buffer(vectors1)
         buffers[:vector_from_bone2] = create_buffer(vectors2)
+        buffers[:skin] = create_buffer(@skin_array)
     end
     
     def init_rotations(model, buffers)

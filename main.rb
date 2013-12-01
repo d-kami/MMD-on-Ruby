@@ -53,6 +53,7 @@ class Object3D
             
             #表情を連想配列で管理するように設定する
             set_skins()
+            @skin_array = Array.new()
         }
     end
     
@@ -173,8 +174,11 @@ class Object3D
                     r.mul(tmp_q)
                     r.mul(motion.arot)
 
-                    if @model.bones[bone_index].name.index('ひざ')
+                    if @model.bones[bone_index].name.index('ひざ') != nil
                         c = r[3]
+                        
+                        c = -c if c < 0.0
+                        c = 1.0 if c > 1.0
                         
                         r.set(Math::sqrt(1 - c * c), 0, 0, c)
                         
@@ -184,7 +188,7 @@ class Object3D
                         tmp.mul(tmp_q)
                         tmp_q.set_array(tmp)
                         tmp.set_array(parent_rotation)
-                        tmp.mul(tmp_q);
+                        tmp.mul(tmp_q)
                         tmp_q.set_array(tmp)
                     end
 
@@ -245,6 +249,14 @@ class Object3D
     def bone_motions()
         start = Time.now()
         
+        length = @model.vertices.length * 3
+        
+        length.times do |i|
+            @skin_array[i] = 0
+        end
+        
+        skin_motions()
+        
         @motion_map.each do |name, motions|
             bone_motion(name, motions, @frame)
         end
@@ -266,6 +278,7 @@ class Object3D
         brot = NArray.to_na(@model.bones.map{|b| b.arot.values}).flatten().to_type(NArray::SFLOAT)
         bnum1 = NArray.to_na(@model.vertices.map{|v| v.bone_nums[0]}).flatten
         bnum2 = NArray.to_na(@model.vertices.map{|v| v.bone_nums[1]}).flatten
+        bskin = @skin_array.pack('f*')
         
         @positions1 = bpos[NArray.refer(bnum1 * NVector[3, 3, 3] + NVector[0, 1, 2]).flatten()].to_s()
         @positions2 = bpos[NArray.refer(bnum2 * NVector[3, 3, 3] + NVector[0, 1, 2]).flatten()].to_s()
@@ -277,9 +290,10 @@ class Object3D
         
         modify_buffer(@buffers[:bone1_rotation], @rotations1)
         modify_buffer(@buffers[:bone2_rotation], @rotations2)
+        modify_buffer(@buffers[:skin], bskin)
 
         endm = Time.now()
-        #puts (endm - start).to_s() + "s"
+        puts (endm - start).to_s() + "s"
     end
     
     def bone_motion(name, motions, frame)
@@ -300,7 +314,7 @@ class Object3D
         bone = @bone_map[motion.bone_name]
         
         if(motion.flame_no == nextm.flame_no)
-            per = 1.0;
+            per = 1.0
         else
             if(frame >= motion.flame_no)
                 per = (frame - motion.flame_no).to_f() / (nextm.flame_no - motion.flame_no)
@@ -355,7 +369,7 @@ class Object3D
         y1 = next_motion.interpolation[i * 4 + 2]
         y2 = next_motion.interpolation[i * 4 + 3]
         
-        return bezierp(x1.to_f() / 127, x2.to_f() / 127, y1.to_f() / 127, y2.to_f() / 127, per);
+        return bezierp(x1.to_f() / 127, x2.to_f() / 127, y1.to_f() / 127, y2.to_f() / 127, per)
     end
     
     def bezierp(x1, x2, y1, y2, x)
@@ -385,7 +399,6 @@ class Object3D
         while @skin_index < @motion.skins.length && @motion.skins[@skin_index].flame_no == @frame
             #@frameと一致しているflame_noを持つ表情を全て設定する
             skin_motion()
-
             @skin_index += 1
         end
     end
@@ -399,21 +412,14 @@ class Object3D
 
         skin = @skin_map[@motion.skins[@skin_index].name]
 
-        if skin.name == 'base'
-            #デフォルトの表情
-            skin.vertices.each do |base|
-                3.times{|i|
-                    @model.vertices[base.index].pos[i] = base.pos[i]
-                }
-            end
-        else
+        if skin.name != 'base'
             #変更する表情
             skin.vertices.each do |vertex|
                 base = @model.skins[0].vertices[vertex.index]
 
-                3.times{|i|
-                     @model.vertices[base.index].pos[i] = base.pos[i] + vertex.pos[i] * @motion.skins[@skin_index].weight
-                }
+                3.times do |i|
+                     @skin_array[base.index * 3 + i] = vertex.pos[i] * @motion.skins[@skin_index].weight
+                end
             end
         end
     end
@@ -421,7 +427,6 @@ class Object3D
     #モデル情報の更新を行う
     def update_motion()
         bone_motions()
-        skin_motions()
     end
 
     #3D画面の描画を行う
@@ -431,7 +436,7 @@ class Object3D
         #カメラの設定
         GL.MatrixMode(GL::GL_MODELVIEW)
         GL.LoadIdentity()
-        GLU.LookAt(0.0, 0.0, 37.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
+        GLU.LookAt(0.0, 10.0, 27.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
 
         #背景色の設定
         GL.ClearColor(0.0, 0.0, 1.0, 1.0)

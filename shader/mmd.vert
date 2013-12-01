@@ -9,6 +9,7 @@ attribute vec3 bone1Position;
 attribute vec3 bone2Position;
 attribute vec3 vertNormal;
 attribute vec2 texCoord;
+attribute vec3 skins;
 
 varying vec3 vPosition;
 varying vec3 vNormal;
@@ -20,14 +21,14 @@ vec3 qtransform(vec4 q, vec3 v) {
 
 void main(void)
 {
-    vec3 position = qtransform(bone1Rotation, vectorFromBone1) + bone1Position;
+    vec3 position = qtransform(bone1Rotation, vectorFromBone1 + skins) + bone1Position;
     vec3 normal = qtransform(bone1Rotation, vertNormal);
 
     vPosition = (gl_ModelViewProjectionMatrix * vec4(position, 1.0)).xyz;
     vNormal = gl_NormalMatrix * normal;
 
     if (boneWeight < 0.99) {
-        vec3 p2 = qtransform(bone2Rotation, vectorFromBone2) + bone2Position;
+        vec3 p2 = qtransform(bone2Rotation, vectorFromBone2 + skins) + bone2Position;
         vec3 n2 = qtransform(bone2Rotation, normal);
 
         position = mix(p2, position, boneWeight);

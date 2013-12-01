@@ -40,6 +40,7 @@ module Shader
         attribute(program, locations, :bone2_position, 'bone2Position')
         attribute(program, locations, :normal, 'vertNormal')
         attribute(program, locations, :texcoord, 'texCoord')
+        attribute(program, locations, :skin, 'skins')
     end
     
     def attribute(program, locations, label, name)
@@ -94,6 +95,7 @@ module Shader
         send_attribute(buffers, locations, :bone2_position, 3)
         send_attribute(buffers, locations, :normal, 3)
         send_attribute(buffers, locations, :texcoord, 2)
+        send_attribute(buffers, locations, :skin, 3);
     end
     
     def send_attribute(buffers, locations, label, size)

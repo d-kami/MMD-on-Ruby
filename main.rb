@@ -436,7 +436,7 @@ class Object3D
         #カメラの設定
         GL.MatrixMode(GL::GL_MODELVIEW)
         GL.LoadIdentity()
-        GLU.LookAt(0.0, 10.0, 27.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
+        GLU.LookAt(0.0, 10.0, 18.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
 
         #背景色の設定
         GL.ClearColor(0.0, 0.0, 1.0, 1.0)
@@ -672,7 +672,7 @@ class Object3D
         GLUT.InitWindowPosition(x, y)
         GLUT.InitWindowSize(width, height)
         GLUT.Init()
-        GLUT.InitDisplayMode(GLUT::GLUT_DOUBLE | GLUT::GLUT_RGB | GLUT::GLUT_DEPTH)
+        GLUT.InitDisplayMode(GLUT::GLUT_DOUBLE | GLUT::GLUT_RGB | GLUT::GLUT_DEPTH | GLUT::GLUT_MULTISAMPLE)
         GLUT.CreateWindow(title)
     end
     

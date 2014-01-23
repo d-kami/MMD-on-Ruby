@@ -54,6 +54,12 @@ class Object3D
             #表情を連想配列で管理するように設定する
             set_skins()
             @skin_array = Array.new()
+            
+            length = @model.vertices.length * 3
+        
+            length.times do |i|
+                @skin_array[i] = 0
+            end
         }
     end
     
@@ -117,7 +123,7 @@ class Object3D
     #光源の色と方向設定
     def init_light()
         @light_diffuse = [0.6, 0.6, 0.6]
-        @light_dir = [0.5, 1.0, 0.5]
+        @light_dir = [-0.5, -1.0, 0.5]
     end
     
     def resolve_iks()
@@ -249,12 +255,6 @@ class Object3D
     def bone_motions()
         start = Time.now()
         
-        length = @model.vertices.length * 3
-        
-        length.times do |i|
-            @skin_array[i] = 0
-        end
-        
         skin_motions()
         
         @motion_map.each do |name, motions|
@@ -276,14 +276,12 @@ class Object3D
         
         bpos = NArray.to_na(@model.bones.map{|b| b.apos.values}).flatten().to_type(NArray::SFLOAT)
         brot = NArray.to_na(@model.bones.map{|b| b.arot.values}).flatten().to_type(NArray::SFLOAT)
-        bnum1 = NArray.to_na(@model.vertices.map{|v| v.bone_nums[0]}).flatten
-        bnum2 = NArray.to_na(@model.vertices.map{|v| v.bone_nums[1]}).flatten
         bskin = @skin_array.pack('f*')
         
-        @positions1 = bpos[NArray.refer(bnum1 * NVector[3, 3, 3] + NVector[0, 1, 2]).flatten()].to_s()
-        @positions2 = bpos[NArray.refer(bnum2 * NVector[3, 3, 3] + NVector[0, 1, 2]).flatten()].to_s()
-        @rotations1 = brot[NArray.refer(bnum1 * NVector[4, 4, 4, 4] + NVector[0, 1, 2, 3]).flatten()].to_s()
-        @rotations2 = brot[NArray.refer(bnum2 * NVector[4, 4, 4, 4] + NVector[0, 1, 2, 3]).flatten()].to_s()
+        @positions1 = bpos[@nv1].to_s()
+        @positions2 = bpos[@nv2].to_s()
+        @rotations1 = brot[@nm1].to_s()
+        @rotations2 = brot[@nm2].to_s()
         
         modify_buffer(@buffers[:bone1_position], @positions1)
         modify_buffer(@buffers[:bone2_position], @positions2)
@@ -436,7 +434,7 @@ class Object3D
         #カメラの設定
         GL.MatrixMode(GL::GL_MODELVIEW)
         GL.LoadIdentity()
-        GLU.LookAt(0.0, 10.0, 18.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
+        GLU.LookAt(0.0, 10.0, 20.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
 
         #背景色の設定
         GL.ClearColor(0.0, 0.0, 1.0, 1.0)
@@ -656,6 +654,14 @@ class Object3D
     def load(model_name, motion_name, vertex_shader, fragment_shader)
         load_model("./model/#{model_name}")
         load_motion("./motion/#{motion_name}")
+        
+        @bnum1 = NArray.to_na(@model.vertices.map{|v| v.bone_nums[0]}).flatten
+        @bnum2 = NArray.to_na(@model.vertices.map{|v| v.bone_nums[1]}).flatten
+        
+        @nv1 = NArray.refer(@bnum1 * NVector[3, 3, 3] + NVector[0, 1, 2]).flatten()
+        @nv2 = NArray.refer(@bnum2 * NVector[3, 3, 3] + NVector[0, 1, 2]).flatten()
+        @nm1 = NArray.refer(@bnum1 * NVector[4, 4, 4, 4] + NVector[0, 1, 2, 3]).flatten()
+        @nm2 = NArray.refer(@bnum2 * NVector[4, 4, 4, 4] + NVector[0, 1, 2, 3]).flatten()
         
         @program, @locations = load_shader(vertex_shader, fragment_shader)
     end

@@ -116,7 +116,7 @@ class Object3D
     
     #光源の色と方向設定
     def init_light()
-        @light_diffuse = [1.0, 1.0, 1.0]
+        @light_diffuse = [0.6, 0.6, 0.6]
         @light_dir = [0.5, 1.0, 0.5]
     end
     

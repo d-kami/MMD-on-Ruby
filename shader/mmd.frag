@@ -33,7 +33,7 @@ void main (void)
         float specularWeight = pow(max(0.001, dot(halfAngle, normalize(vNormal))) , shininess);
         vec3 specular = specularWeight * specularColor;
         
-        vec3 color = (ambient + diffuse + specular);
+        vec3 color = ambient + lightDiffuse * (diffuse + specular);
         
         if(useTexture){
             color *= texture2D(sampler, vTexCoord).rgb;

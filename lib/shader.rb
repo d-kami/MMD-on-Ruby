@@ -52,14 +52,14 @@ module Shader
     def create_program(vert_name, frag_name)
         program = GL.CreateProgram()
         
-        vert_shader = create_shader(vert_name, GL_VERTEX_SHADER)
-        frag_shader = create_shader(frag_name, GL_FRAGMENT_SHADER)
+        vert_shader = create_shader(vert_name, GL::VERTEX_SHADER)
+        frag_shader = create_shader(frag_name, GL::FRAGMENT_SHADER)
         
         GL.AttachShader(program, vert_shader)
         GL.AttachShader(program, frag_shader)
         GL.LinkProgram(program)
         
-        if !GL.GetProgramiv(program, GL_LINK_STATUS)
+        if !GL.GetProgramiv(program, GL::LINK_STATUS)
             raise(GL.GetProgramInfoLog(program))
         end
 
@@ -77,7 +77,7 @@ module Shader
             GL.ShaderSource(shader, file.read())
             GL.CompileShader(shader)
             
-            if !GL.GetShaderiv(shader, GL_COMPILE_STATUS)
+            if !GL.GetShaderiv(shader, GL::COMPILE_STATUS)
                 raise(GL.GetShaderInfoLog(shader))
             end
         }
@@ -99,7 +99,7 @@ module Shader
     end
     
     def send_attribute(buffers, locations, label, size)
-        GL.BindBuffer(GL_ARRAY_BUFFER, buffers[label])
-        GL.VertexAttribPointer(locations[label], size, GL_FLOAT, false, 0, 0)
+        GL::BindBuffer(GL::ARRAY_BUFFER, buffers[label])
+        GL::VertexAttribPointer(locations[label], size, GL::FLOAT, false, 0, 0)
     end
 end

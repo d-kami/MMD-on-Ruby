@@ -82,7 +82,7 @@ module InitBuffers
     def init_indices(model, buffers)
         indexBuffer = GL.GenBuffers(1)[0]
         GL.BindBuffer(GL::ELEMENT_ARRAY_BUFFER, indexBuffer)
-        GL.BufferData(GL::ELEMENT_ARRAY_BUFFER, model.face.indices.length * 2, model.face.indices.pack('v*'), GL_STATIC_DRAW);
+        GL.BufferData(GL::ELEMENT_ARRAY_BUFFER, model.face.indices.length * 2, model.face.indices.pack('v*'), GL::STATIC_DRAW);
         buffers[:indices] = indexBuffer
     end
     
@@ -102,13 +102,13 @@ module InitBuffers
     def create_buffer(array)
         buffer = GL.GenBuffers(1)[0]
         GL.BindBuffer(GL::ARRAY_BUFFER, buffer)
-        GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL_DYNAMIC_DRAW)
+        GL.BufferData(GL::ARRAY_BUFFER, 4 * array.size, array.pack('f*'), GL::DYNAMIC_DRAW)
         
         return buffer
     end
     
     def modify_buffer(buffer, array)
         GL.BindBuffer(GL::ARRAY_BUFFER, buffer)
-        GL.BufferData(GL::ARRAY_BUFFER, array.size, array, GL_STATIC_DRAW)
+        GL.BufferData(GL::ARRAY_BUFFER, array.size, array, GL::STATIC_DRAW)
     end
 end

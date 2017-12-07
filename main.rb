@@ -2,6 +2,7 @@
 
 require 'opengl'
 require 'glut'
+require 'glu'
 
 require 'narray'
 
@@ -253,7 +254,7 @@ class Object3D
     end
     
     def bone_motions()
-        start = Time.now()
+        #start = Time.now()
         
         skin_motions()
         
@@ -290,8 +291,8 @@ class Object3D
         modify_buffer(@buffers[:bone2_rotation], @rotations2)
         modify_buffer(@buffers[:skin], bskin)
 
-        endm = Time.now()
-        puts (endm - start).to_s() + "s"
+        #endm = Time.now()
+        #puts (endm - start).to_s() + "s"
     end
     
     def bone_motion(name, motions, frame)
@@ -434,7 +435,7 @@ class Object3D
         #カメラの設定
         GL.MatrixMode(GL::GL_MODELVIEW)
         GL.LoadIdentity()
-        GLU.LookAt(0.0, 10.0, 20.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
+        GLU::LookAt(0.0, 10.0, 20.0, 0.0, 10.0, 0.0, 0.0, 1.0, 0.0)
 
         #背景色の設定
         GL.ClearColor(0.0, 0.0, 1.0, 1.0)
@@ -446,7 +447,7 @@ class Object3D
 
         #カリングを有効にする
         GL.Enable(GL::CULL_FACE)
-        
+
         send_attributes(@buffers, @locations)
 
         #モデル描画
@@ -693,11 +694,11 @@ class Object3D
     
     #描画領域のサイズの変更
     def reshape(w,h)
-        GL.Viewport(0, 0, w, h)
+        GL::Viewport(0, 0, w, h)
 
-        GL.MatrixMode(GL::GL_PROJECTION)
-        GL.LoadIdentity()
-        GLU.Perspective(60.0, w.to_f() / h.to_f(), 0.1, 100.0)
+        GL::MatrixMode(GL::GL_PROJECTION)
+        GL::LoadIdentity()
+        GLU::Perspective(60.0, w.to_f() / h.to_f(), 0.1, 50.0)
     end
 
     def start()

@@ -2,7 +2,6 @@
 #
 # Copyright (C) 2005 NISHIMOTO Keisuke.
 
-require 'iconv'
 require 'zlib'
 
 module PureImage
@@ -47,7 +46,6 @@ class Font
 
   def initialize(file)
     begin
-      @iconv = $KCODE != 'NONE' ? Iconv.new('UTF-8', $KCODE) : nil
       inp = File.new(file, "r")
       inp.binmode
       @file = file
@@ -116,7 +114,7 @@ class Font
     # 0001 0000-0010 FFFF | 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx (4-6)
     unicode = Array.new
     mode = 0; code = 0
-    utf8_str = @iconv != nil ? @iconv.iconv(str) : str
+    utf8_str = str.encode('UTF-8')
     utf8_str.each_byte {|c|
       if mode == 0 then
         if c <= 0x7f then
